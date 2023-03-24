@@ -3,18 +3,56 @@ import win32com.client as win32
 from string import Template
 import os
 
+excel_path = "../Excels/"
+img_path = "./images/"
+mail_path = "./mails"
+
 
 def main():
-    df = pd.read_csv("./Données clients.csv", sep=';', header=2)
+    df = pd.read_excel("../../Excels/BDD Robin et victor.xlsx",
+                       sheet_name='Clients réunis', header=2)
     frenchDf = df.loc[(df["Pays"] == "France") | (df["Pays"] == "Belgique")]
     englishDf = df.loc[(df["Pays"] != "France") & (df["Pays"] != "Belgique")]
     # sendMail(frenchDf, "fr")
-    sendMail(englishDf, "en")
+    # sendMail(englishDf, "en")
+
 
 def create_mail_template(language: str):
     filename = language + '.html'
     with open(filename, encoding='utf-8', mode="r") as file:
         return Template(file.read())
+
+
+def add_images_to_mail(mail):
+    attachment = mail.Attachments.Add(
+        os.getcwd() + "\\images\\Echantillons_A.jpg")
+    attachment.PropertyAccessor.SetProperty(
+        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "Echantillons_A.jpg")
+
+    attachment = mail.Attachments.Add(
+        os.getcwd() + "\\images\\facebook2x.png")
+    attachment.PropertyAccessor.SetProperty(
+        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "facebook2x.png")
+
+    attachment = mail.Attachments.Add(
+        os.getcwd() + "\\images\\instagram2x.png")
+    attachment.PropertyAccessor.SetProperty(
+        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "instagram2x.png")
+
+    attachment = mail.Attachments.Add(os.getcwd() + "\\images\\LCPC.jpg")
+    attachment.PropertyAccessor.SetProperty(
+        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "LCPC.jpg")
+
+    attachment = mail.Attachments.Add(
+        os.getcwd() + "\\images\\leaualabouche_cadre.jpg")
+    attachment.PropertyAccessor.SetProperty(
+        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "leaualabouche_cadre.jpg")
+
+    attachment = mail.Attachments.Add(
+        os.getcwd() + "\\images\\logo_transparent.png")
+    attachment.PropertyAccessor.SetProperty(
+        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "logo_transparent.png")
+
 
 def sendMail(df: pd.DataFrame, language: str):
 
@@ -46,7 +84,7 @@ def sendMail(df: pd.DataFrame, language: str):
         # Create mail object
         mail = outlook.CreateItem(0)
 
-        # Attribute the correct sender account 
+        # Attribute the correct sender account
         mail._oleobj_.Invoke(*(64209, 0, 8, 0, sender_account))
 
         # Set email's object
@@ -55,33 +93,14 @@ def sendMail(df: pd.DataFrame, language: str):
         # Format the mail with client name and email
         mail_with_name = mail_template.safe_substitute(name=receiver_name)
         mail.HTMLBody = mail_with_name
-        mail.To = "robin.varliette@gmail.com"
+        mail.To = receiver_email
 
         # Add images to the mail
-        attachment = mail.Attachments.Add(os.getcwd() + "\\images\\Echantillons_A.jpg")
-        attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "Echantillons_A.jpg")
-
-        attachment = mail.Attachments.Add(os.getcwd() + "\\images\\facebook2x.png")
-        attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "facebook2x.png")
-
-        attachment = mail.Attachments.Add(os.getcwd() + "\\images\\instagram2x.png")
-        attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "instagram2x.png")
-
-        attachment = mail.Attachments.Add(os.getcwd() + "\\images\\LCPC.jpg")
-        attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "LCPC.jpg")
-
-        attachment = mail.Attachments.Add(os.getcwd() + "\\images\\leaualabouche_cadre.jpg")
-        attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "leaualabouche_cadre.jpg")
-
-        attachment = mail.Attachments.Add(os.getcwd() + "\\images\\logo_transparent.png")
-        attachment.PropertyAccessor.SetProperty("http://schemas.microsoft.com/mapi/proptag/0x3712001F", "logo_transparent.png")
+        add_images_to_mail(mail)
 
         # Send email
         mail.Send()
         print(f"Mail sent at {receiver_email}")
-
-        input()
-    
 
 
 if __name__ == "__main__":
