@@ -105,15 +105,6 @@ def count_crosses(s):
     else:
         return s.lower().count('x')
 
-# Define function to merge rows and keep longest strings
-
-
-# def merge_longest_strings(df: pd.DataFrame):
-#     result = pd.Series()
-#     for col in df.columns:
-#         result[col] = df[col].str.len().idxmax()
-#     return df.loc[result]
-
 
 def merge_papa_df(merged_df: pd.DataFrame, papa_df: pd.DataFrame):
     # Get client infos
