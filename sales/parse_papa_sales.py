@@ -28,11 +28,10 @@ perfumes_to_short = {
 
 
 def get_perfumes_format(row: pd.Series):
-    is30 = str(row['30 ml']).find('x') == -1
-    is75 = str(row['75 ml']).find('x') == -1
-    isEch = str(row['Ech']).find('x') == -1
+    is30 = str(row['30 ml']) != 'nan'
+    is75 = str(row['75 ml']) != 'nan'
+    isEch = str(row['Ech']) != 'nan'
 
-    print(row)
     if is30:
         if is75 or isEch:
             raise Exception("More than 1 format given")
@@ -77,8 +76,8 @@ def parse_papa_sales():
 
             ordered_products.at[index, column_name] += quantity
 
-    df = df.drop(formats + perfumes)
-    df.join(ordered_products)
+    df = df.drop(formats + perfumes, axis=1)
+    df = df.join(ordered_products)
     print(df)
 
 

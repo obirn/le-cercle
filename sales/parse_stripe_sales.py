@@ -128,6 +128,7 @@ def parse_stripe_orders(df: pd.DataFrame, orders: pd.Series):
             print(f"   Adding {quantity} to {column_name}")
             ordered_products.at[n, column_name] += quantity
 
+    df['Source'] = 'Wix'
     return df.join(ordered_products)
 
 
