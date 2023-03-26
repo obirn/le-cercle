@@ -1,11 +1,5 @@
 import pandas as pd
 
-format_to_short = {
-    "30 ml": "30C",
-    "75 ml": "75C",
-    "Ech": "E",
-}
-
 products_as_column = \
     ["OSM 75S", "OSM 75C", "OSM 30S", "OSM 30C", "OSM E",
      "ELB 75S", "ELB 75C", "ELB 30S", "ELB 30C", "ELB E",
@@ -15,6 +9,13 @@ products_as_column = \
      "VFL 75S", "VFL 75C", "VFL 30S", "VFL 30C", "VFL E",
      "LDB 75S", "LDB 75C", "LDB 30S", "LDB 30C", "LDB E",
      "ENSEMBLE D'ÉCHANTILLONS", "COFFRET DÉCOUVERTE"]
+
+format_to_short = {
+    "30 ml": "30C",
+    "75 ml": "75C",
+    "Ech": "E",
+}
+
 
 perfumes_to_short = {
     'Vague de Folie Verte': 'VFL',
@@ -49,17 +50,19 @@ def get_perfumes_format(row: pd.Series):
 
 
 def parse_papa_sales():
+    """
+        This function parse the 'BDD ventes papa' database and 
+        gives a dataframe containing as rows orders, and for columns clients infos + single product quantities.
+    """
     df = pd.read_excel(
         "C:/Users/robin/Desktop/Perso/Professionel/Le Cercle/Excels/Ventes/BDD Ventes papa.xlsx", header=1)
 
     ordered_products = pd.DataFrame(
         0, columns=products_as_column, index=df.index)
 
-    formats = ['30 ml', '75 ml', 'Ech']
-
+    formats = ["30 ml", "75 ml", "Ech"]
     perfumes = ["Vague de Folie Verte",	"La Dame Blanche",
                 "Osmanthé",	"L'eau à la bouche",	"Lime Absolue",	"A L'Iris",	"Magnol'Art"]
-
     for index, row in df.iterrows():
         format = get_perfumes_format(row)
 
@@ -76,9 +79,10 @@ def parse_papa_sales():
 
             ordered_products.at[index, column_name] += quantity
 
-    df = df.drop(formats + perfumes, axis=1)
     df = df.join(ordered_products)
+    df = df.drop(formats + perfumes, axis=1)
     print(df)
+    return df
 
 
 if __name__ == "__main__":

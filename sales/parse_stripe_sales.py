@@ -62,11 +62,6 @@ def parse_stripe_sales():
                    'Customer Name (metadata)', 'Included Charges: Shipping (metadata)',
                    'Order Item #2 (metadata)', 'Order Item #3 (metadata)']
 
-    accounting_columns = ['Created (UTC)', 'Customer Email (metadata)', 'Customer Name (metadata)', 'Customer Phone (metadata)',
-                          'Shipping Address (metadata)', 'Included Charges: Shipping (metadata)']
-
-    accounting_columns += products_as_column
-
     # Remove 'Test' orders of the dataframe
     print("Removing test orders...")
     print("Number of orders before removing:", len(df))
@@ -88,8 +83,7 @@ def parse_stripe_sales():
     # Reset index
     df = df.reset_index()
 
-    df = df[accounting_columns]
-    df.to_excel("save.xlsx")
+    return df
 
 
 def parse_stripe_orders(df: pd.DataFrame, orders: pd.Series):
@@ -128,7 +122,7 @@ def parse_stripe_orders(df: pd.DataFrame, orders: pd.Series):
             print(f"   Adding {quantity} to {column_name}")
             ordered_products.at[n, column_name] += quantity
 
-    df['Source'] = 'Wix'
+    df["Source"] = "Wix"
     return df.join(ordered_products)
 
 
