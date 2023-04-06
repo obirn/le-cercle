@@ -81,7 +81,7 @@ def parse_papa_sales():
 
     df = df.join(ordered_products)
     df = df.drop(formats + perfumes, axis=1)
-    print(df)
+
     return df
 
 

@@ -3,6 +3,9 @@ from parse_papa_sales import parse_papa_sales
 import pandas as pd
 import numpy as np
 
+excel_path = "../../Excels/"
+sales_path = "Ventes/"
+
 products_as_column = \
     ["OSM 75S", "OSM 75C", "OSM 30S", "OSM 30C", "OSM E",
      "ELB 75S", "ELB 75C", "ELB 30S", "ELB 30C", "ELB E",
@@ -18,10 +21,11 @@ def get_all_sales():
     papa_df = parse_papa_sales()
     stripe_df = parse_stripe_sales()
 
-    stripe_account_columns = ['Created (UTC)', 'Customer Email (metadata)', 'Customer Name (metadata)', 'Customer Phone (metadata)',
-                              'Shipping Address (metadata)', 'Included Charges: Shipping (metadata)', 'Source'] + products_as_column
+    stripe_accounting_columns = ['Created (UTC)', 'Customer Email (metadata)', 'Customer Name (metadata)', 'Customer Phone (metadata)',
+                                 'Shipping Address (metadata)', 'Included Charges: Shipping (metadata)', 'Source'] + products_as_column
 
-    stripe_df = stripe_df[stripe_account_columns]
+    stripe_df = stripe_df[stripe_accounting_columns]
+
     # Normalize columns names
     stripe_to_normalized = {
         'Created (UTC)': 'Date',
@@ -38,10 +42,12 @@ def get_all_sales():
 
     all_sales = all_sales.reset_index(drop=True)
 
-    all_sales.to_excel('save.xlsx')
-    print(all_sales)
+    all_sales.to_excel(excel_path + sales_path + "all_sales_over_time.xlsx")
+    return all_sales
 
-    return
+
+def main():
+    get_all_sales()
 
 
 if __name__ == "__main__":

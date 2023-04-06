@@ -83,6 +83,9 @@ def parse_stripe_sales():
     # Reset index
     df = df.reset_index()
 
+    # Save dataframe as excel
+    # df.to_excel("./csvs/stripe_sales_product_as_columns.xlsx")
+
     return df
 
 
