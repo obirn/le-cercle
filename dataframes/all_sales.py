@@ -40,10 +40,28 @@ def get_all_sales():
 
     all_sales = pd.concat([papa_df, stripe_df], join="outer", axis=0)
 
-    all_sales = all_sales.reset_index(drop=True)
+    # all_sales = all_sales.reset_index(drop=True)
 
+    # Load wix contacts csv
+    wix_contacts = pd.read_csv("../../CSVs/contacts-wix-06-04-23.csv")
+
+    # Set email as index of the dataframe
+    wix_contacts.set_index("E-mail 1")
+
+    all_sales["Prénom"] = all_sales.apply(get_name(wix_contacts))
+
+    print(all_sales[all_sales["Prénom"].isna()])
+
+    # Save the dataframe as an excel
     all_sales.to_excel(excel_path + sales_path + "all_sales_over_time.xlsx")
     return all_sales
+
+
+def get_name(wix_contacts: pd.DataFrame, row: pd.Series, ):
+    if not pd.isna(row["Prénom"]):
+        return row["Prénom"]
+    else:
+        return wix_contacts[row["Email"]]["Prénom"]
 
 
 def main():

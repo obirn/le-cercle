@@ -32,7 +32,7 @@ conditioning_to_short = {
 def parse_stripe_sales():
     print("Parsing stripe sales... \n")
     df = pd.read_csv(
-        "C:/Users/robin/Desktop/Perso/Professionel/Le Cercle/CSVs/ventes-stripe.csv")
+        "C:/Users/robin/Desktop/Professionel/Le Cercle/CSVs/ventes-stripe.csv")
 
     stripe_columns = \
         ['id', 'Description', 'Seller Message', 'Created (UTC)', 'Amount',

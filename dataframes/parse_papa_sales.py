@@ -55,7 +55,7 @@ def parse_papa_sales():
         gives a dataframe containing as rows orders, and for columns clients infos + single product quantities.
     """
     df = pd.read_excel(
-        "C:/Users/robin/Desktop/Perso/Professionel/Le Cercle/Excels/Ventes/BDD Ventes papa.xlsx", header=1)
+        "C:/Users/robin/Desktop/Professionel/Le Cercle/Excels/Ventes/BDD Ventes papa.xlsx", header=1)
 
     ordered_products = pd.DataFrame(
         0, columns=products_as_column, index=df.index)
