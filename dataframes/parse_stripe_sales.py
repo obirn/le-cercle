@@ -1,5 +1,12 @@
 import pandas as pd
 
+load_path = "../../Data/Load/"
+save_path = "../../Data/Save/"
+excel_path = "Excels/"
+csv_path = "CSVs/"
+sales_path = "Ventes/"
+clients_path = "Clients/"
+
 products_as_column = \
     ["OSM 75S", "OSM 75C", "OSM 30S", "OSM 30C", "OSM E",
      "ELB 75S", "ELB 75C", "ELB 30S", "ELB 30C", "ELB E",
@@ -31,8 +38,7 @@ conditioning_to_short = {
 
 def parse_stripe_sales():
     print("Parsing stripe sales... \n")
-    df = pd.read_csv(
-        "C:/Users/robin/Desktop/Professionel/Le Cercle/CSVs/ventes-stripe.csv")
+    df = pd.read_csv(load_path + csv_path + "ventes-stripe.csv")
 
     stripe_columns = \
         ['id', 'Description', 'Seller Message', 'Created (UTC)', 'Amount',

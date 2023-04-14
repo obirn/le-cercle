@@ -3,8 +3,13 @@ from parse_papa_sales import parse_papa_sales
 import pandas as pd
 import numpy as np
 
-excel_path = "../../Excels/"
+
+load_path = "../../Data/Load/"
+save_path = "../../Data/Save/"
+excel_path = "Excels/"
+csv_path = "CSVs/"
 sales_path = "Ventes/"
+clients_path = "Clients/"
 
 products_as_column = \
     ["OSM 75S", "OSM 75C", "OSM 30S", "OSM 30C", "OSM E",
@@ -40,28 +45,24 @@ def get_all_sales():
 
     all_sales = pd.concat([papa_df, stripe_df], join="outer", axis=0)
 
-    # all_sales = all_sales.reset_index(drop=True)
-
     # Load wix contacts csv
-    wix_contacts = pd.read_csv("../../CSVs/contacts-wix-06-04-23.csv")
+    wix_contacts = pd.read_csv(load_path + csv_path + "contacts-wix-06-04-23.csv")
 
-    # Set email as index of the dataframe
-    wix_contacts.set_index("E-mail 1")
+    # Rename columns
+    wix_contacts = wix_contacts.rename(columns={"E-mail 1": "Email", "Nom de famille": "Nom"})
 
-    all_sales["Prénom"] = all_sales.apply(get_name(wix_contacts))
+    sales_clients = all_sales[["Email", "Nom", "Prénom", "Civilité", "Pays"]]
+    merged_df = pd.merge(sales_clients, wix_contacts, on='Email', how='left')
+    merged_df['Nom'] = merged_df['Nom_y'].fillna(merged_df['Nom_x'])
+    merged_df['Prénom'] = merged_df['Prénom_y'].fillna(merged_df['Prénom_x'])
+    
+    clients_by_email : pd.DataFrame = merged_df.groupby(['Email'])['Nom', 'Prénom', 'Civilité', "Pays"].agg({'Nom':'first', 'Prénom':'first', 'Civilité': 'first', "Pays": "first"}).reset_index()
 
-    print(all_sales[all_sales["Prénom"].isna()])
+    clients_by_email.to_excel(save_path + excel_path + clients_path + "clients_by_email.xlsx")
 
     # Save the dataframe as an excel
-    all_sales.to_excel(excel_path + sales_path + "all_sales_over_time.xlsx")
+    all_sales.to_excel(save_path + excel_path + sales_path + "all_sales_over_time.xlsx")
     return all_sales
-
-
-def get_name(wix_contacts: pd.DataFrame, row: pd.Series, ):
-    if not pd.isna(row["Prénom"]):
-        return row["Prénom"]
-    else:
-        return wix_contacts[row["Email"]]["Prénom"]
 
 
 def main():

@@ -1,5 +1,12 @@
 import pandas as pd
 
+load_path = "../../Data/Load/"
+save_path = "../../Data/Save"
+excel_path = "Excels/"
+csv_path = "CSVs/"
+sales_path = "Ventes/"
+clients_path = "Clients/"
+
 products_as_column = \
     ["OSM 75S", "OSM 75C", "OSM 30S", "OSM 30C", "OSM E",
      "ELB 75S", "ELB 75C", "ELB 30S", "ELB 30C", "ELB E",
@@ -54,8 +61,7 @@ def parse_papa_sales():
         This function parse the 'BDD ventes papa' database and 
         gives a dataframe containing as rows orders, and for columns clients infos + single product quantities.
     """
-    df = pd.read_excel(
-        "C:/Users/robin/Desktop/Professionel/Le Cercle/Excels/Ventes/BDD Ventes papa.xlsx", header=1)
+    df = pd.read_excel(load_path + excel_path + sales_path + "BDD Ventes papa.xlsx", header=1)
 
     ordered_products = pd.DataFrame(
         0, columns=products_as_column, index=df.index)
