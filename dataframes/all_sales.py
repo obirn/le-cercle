@@ -27,7 +27,7 @@ def get_all_sales():
     stripe_df = parse_stripe_sales()
 
     stripe_accounting_columns = ['Created (UTC)', 'Customer Email (metadata)', 'Customer Name (metadata)', 'Customer Phone (metadata)',
-                                 'Shipping Address (metadata)', 'Included Charges: Shipping (metadata)', 'Source'] + products_as_column
+                                 'Shipping Address (metadata)', 'Included Charges: Shipping (metadata)', 'Source', 'Country'] + products_as_column
 
     stripe_df = stripe_df[stripe_accounting_columns]
 
@@ -39,10 +39,14 @@ def get_all_sales():
         'Customer Phone (metadata)': 'Téléphone',
         'Shipping Address (metadata)': 'Adresse complète',
         'Included Charges: Shipping(metadata)': 'Frais de livraison',
+        'Country': "Pays"
     }
 
     stripe_df.rename(columns=stripe_to_normalized, inplace=True)
 
+    print(stripe_df.loc[stripe_df["Email"] == "client@example.com"]["Pays"])
+
+    
     all_sales = pd.concat([papa_df, stripe_df], join="outer", axis=0)
 
     # Load wix contacts csv

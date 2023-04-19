@@ -84,21 +84,26 @@ def parse_stripe_sales():
     print("\n")
 
     print("Parsing orders...")
-    df = parse_stripe_orders(df, df["Description"])
+    df = parse_stripe_orders(df)
 
     # Reset index
     df = df.reset_index()
 
     # Save dataframe as excel
-    # df.to_excel("./csvs/stripe_sales_product_as_columns.xlsx")
+    df.to_excel(save_path + csv_path + "stripe_sales_product_as_columns.xlsx")
 
     return df
 
 
-def parse_stripe_orders(df: pd.DataFrame, orders: pd.Series):
+def parse_stripe_orders(df: pd.DataFrame):
     ordered_products = pd.DataFrame(
-        0, columns=products_as_column, index=df.index)
-    for n, order in orders.items():
+        0, columns=products_as_column + ["Country"], index=df.index)
+    for n, row in df.iterrows():
+        
+        pays = row["Shipping Address (metadata)"]
+        ordered_products.at[n, "Country"] = pays[-2::]
+
+        order = row["Description"]
         print(f"Order: {order}")
         products = order.split(";")
         for product in products:
@@ -130,6 +135,8 @@ def parse_stripe_orders(df: pd.DataFrame, orders: pd.Series):
             print(f'   Product: {product}')
             print(f"   Adding {quantity} to {column_name}")
             ordered_products.at[n, column_name] += quantity
+            
+
 
     df["Source"] = "Wix"
     return df.join(ordered_products)

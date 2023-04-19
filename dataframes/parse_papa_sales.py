@@ -1,7 +1,7 @@
 import pandas as pd
 
 load_path = "../../Data/Load/"
-save_path = "../../Data/Save"
+save_path = "../../Data/Save/"
 excel_path = "Excels/"
 csv_path = "CSVs/"
 sales_path = "Ventes/"
