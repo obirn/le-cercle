@@ -9,16 +9,15 @@ mail_path = "./mails"
 
 
 def main():
-    df = pd.read_excel("../../Excels/BDD Robin et victor.xlsx",
-                       sheet_name='Clients réunis', header=2)
-    frenchDf = df.loc[(df["Pays"] == "France") | (df["Pays"] == "Belgique")]
-    englishDf = df.loc[(df["Pays"] != "France") & (df["Pays"] != "Belgique")]
-    # sendMail(frenchDf, "fr")
+    df = pd.read_excel("../../Data/Load/Excels/Clients/client_last_perfumes.xlsx")
+    # frenchDf = df.loc[(df["Pays"] == "France") | (df["Pays"] == "Belgique")]
+    # englishDf = df.loc[(df["Pays"] != "France") & (df["Pays"] != "Belgique")]
+    sendMail(df, "fr")
     # sendMail(englishDf, "en")
 
 
 def create_mail_template(language: str):
-    filename = language + '.html'
+    filename = "mails/saint-valentin/" + language + '.html'
     with open(filename, encoding='utf-8', mode="r") as file:
         return Template(file.read())
 
@@ -78,8 +77,8 @@ def sendMail(df: pd.DataFrame, language: str):
 
     for index, row in df.iterrows():
 
-        receiver_name = row["Prénom"]
-        receiver_email = row["Adresse mail"]
+        receiver_name = "Robin"
+        receiver_email = row["Email"]
 
         # Create mail object
         mail = outlook.CreateItem(0)
@@ -93,7 +92,7 @@ def sendMail(df: pd.DataFrame, language: str):
         # Format the mail with client name and email
         mail_with_name = mail_template.safe_substitute(name=receiver_name)
         mail.HTMLBody = mail_with_name
-        mail.To = receiver_email
+        mail.To = "robin.varliette@gmail.com"
 
         # Add images to the mail
         add_images_to_mail(mail)
