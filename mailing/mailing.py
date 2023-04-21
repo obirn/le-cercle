@@ -54,9 +54,9 @@ def add_images_as_attachments(mail: win32.CDispatch, mail_path: str):
     img_dir = mail_path + "images/"
     onlyfiles = [f for f in os.listdir(img_dir) if os.path.isfile(os.path.join(img_dir, f))]
     for img_name in onlyfiles:
-        absolute_img_path = os.getcwd() + "/" + img_dir + img_name
+        absolute_img_path = os.getcwd() + "\\" + (img_dir + img_name).replace("/","\\")
         attachment = mail.Attachments.Add(absolute_img_path)
-        attachment.PropertyAccessor.SetProperty(PR_ATTACH_CONTENT_ID, absolute_img_path)
+        attachment.PropertyAccessor.SetProperty(PR_ATTACH_CONTENT_ID, img_name)
 
 
 def send_mailing(df: pd.DataFrame, mail_path: str):
