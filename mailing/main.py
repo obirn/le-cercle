@@ -22,35 +22,15 @@ def create_mail_template(language: str):
         return Template(file.read())
 
 
-def add_images_to_mail(mail):
-    attachment = mail.Attachments.Add(
-        os.getcwd() + "\\images\\Echantillons_A.jpg")
-    attachment.PropertyAccessor.SetProperty(
-        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "Echantillons_A.jpg")
-
-    attachment = mail.Attachments.Add(
-        os.getcwd() + "\\images\\facebook2x.png")
-    attachment.PropertyAccessor.SetProperty(
-        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "facebook2x.png")
-
-    attachment = mail.Attachments.Add(
-        os.getcwd() + "\\images\\instagram2x.png")
-    attachment.PropertyAccessor.SetProperty(
-        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "instagram2x.png")
-
-    attachment = mail.Attachments.Add(os.getcwd() + "\\images\\LCPC.jpg")
-    attachment.PropertyAccessor.SetProperty(
-        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "LCPC.jpg")
-
-    attachment = mail.Attachments.Add(
-        os.getcwd() + "\\images\\leaualabouche_cadre.jpg")
-    attachment.PropertyAccessor.SetProperty(
-        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "leaualabouche_cadre.jpg")
-
-    attachment = mail.Attachments.Add(
-        os.getcwd() + "\\images\\logo_transparent.png")
-    attachment.PropertyAccessor.SetProperty(
-        "http://schemas.microsoft.com/mapi/proptag/0x3712001F", "logo_transparent.png")
+def add_images_as_attachments(mail: win32.CDispatch, mail_path: str):
+    PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+    img_dir = mail_path + "images/"
+    onlyfiles = [f for f in os.listdir(img_dir) if os.path.isfile(os.path.join(img_dir, f))]
+    for img_name in onlyfiles:
+        absolute_img_path = os.getcwd() + "\\" + (img_dir + img_name).replace("/","\\")
+        print(absolute_img_path)
+        attachment = mail.Attachments.Add(absolute_img_path)
+        attachment.PropertyAccessor.SetProperty(PR_ATTACH_CONTENT_ID, "images/" + img_name)
 
 
 def sendMail(df: pd.DataFrame, language: str):
@@ -95,10 +75,11 @@ def sendMail(df: pd.DataFrame, language: str):
         mail.To = "robin.varliette@gmail.com"
 
         # Add images to the mail
-        add_images_to_mail(mail)
+        add_images_as_attachments(mail, "./mails/saint-valentin/")
 
         # Send email
         mail.Send()
+        input()
         print(f"Mail sent at {receiver_email}")
 
 
