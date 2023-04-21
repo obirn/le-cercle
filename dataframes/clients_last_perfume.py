@@ -22,7 +22,6 @@ def get_last_perfume(group):
     perfume_columns = [c for c in group.columns if c.endswith(('S', 'C')) and c != "ENSEMBLE D'ÉCHANTILLONS"]
     perfume_sales : pd.Series= group[perfume_columns + ['Date']].melt(id_vars=['Date'], var_name='perfume', value_name='sales')
     # print(perfume_sales)
-    if perfume_sales['sales'].str().contains("OSM")
     if perfume_sales['sales'].sum() > 0:
         last_sale = perfume_sales.sort_values('sales', ascending=False).iloc[0]
         return last_sale['perfume']

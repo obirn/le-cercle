@@ -39,17 +39,19 @@ def main():
     # Send the mailing
     send_mailing(sales_df, mail_dir_path + mail_name)
 
-def mail_get_template(mail_dir: str, language: str):
-    with open(mail_dir+language+".html", encoding='utf-8', mode="r") as file:
+def get_mail_template(mail_path: str, language: str):
+    with open(mail_path+language+".html", encoding='utf-8', mode="r") as file:
 
         # Replace src by cid in html code 
         file_contents = file.read()
         file_contents = re.sub("src=\"images/", "src=\"cid:", file_contents)
+        with open(mail_path+language+"save.html",encoding='utf-8', mode = "w") as save:
+            save.write(file_contents)
         return Template(file_contents)
     
-def add_images_as_attachments(mail: win32.CDispatch, mail_dir: str):
+def add_images_as_attachments(mail: win32.CDispatch, mail_path: str):
     PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
-    img_dir = mail_dir + "images/"
+    img_dir = mail_path + "images/"
     onlyfiles = [f for f in os.listdir(img_dir) if os.path.isfile(os.path.join(img_dir, f))]
     for img_name in onlyfiles:
         absolute_img_path = os.getcwd() + "/" + img_dir + img_name
@@ -57,7 +59,7 @@ def add_images_as_attachments(mail: win32.CDispatch, mail_dir: str):
         attachment.PropertyAccessor.SetProperty(PR_ATTACH_CONTENT_ID, absolute_img_path)
 
 
-def send_mailing(df: pd.DataFrame, mail_dir_path: str):
+def send_mailing(df: pd.DataFrame, mail_path: str):
 
     # Load Outlook client
     outlook = win32.Dispatch('outlook.application')
@@ -74,8 +76,8 @@ def send_mailing(df: pd.DataFrame, mail_dir_path: str):
         print("Error: couldn't find sender account with email "+sender_email)
     print("Getting Sender account OK")
 
-    fr_mail_template = mail_get_template(mail_dir_path, "fr")
-    en_mail_template = mail_get_template(mail_dir_path, "en")
+    fr_mail_template = get_mail_template(mail_path, "fr")
+    en_mail_template = get_mail_template(mail_path, "en")
     print("Loading emails templates OK")
 
 
@@ -86,50 +88,67 @@ def send_mailing(df: pd.DataFrame, mail_dir_path: str):
     last_perfume_bought = last_perfume_bought.set_index( "Email", drop=True)
 
     for index, row in df.iterrows():
-        try:
-            send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject, en_mail_subject, outlook, sender_account, last_perfume_bought)
-        except Exception as e:
-            email = row["Email"]
-            print(f"Couldn't send mail to {email}")
-            print(e)          # __str__ allows args to be printed directly
+        # try:
+        send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject, 
+                  en_mail_subject, outlook, sender_account, last_perfume_bought,
+                  mail_path)
+        # except Exception as e:
+        #     email = row["Email"]
+        #     print(f"Couldn't send mail to {email}")
+        #     print(e.args)
+        #     print(e)          # __str__ allows args to be printed directly
 
 def get_last_perfume(email: str, clients_last_perfume: pd.DataFrame):
-    last_perfume = clients_last_perfume["Email"]
+    last_perfume = clients_last_perfume.loc[email].iloc[0]
+    print(last_perfume)
     if last_perfume == "ENSEMBLE D'ECHANTILLONS":
         return ""
     product = last_perfume[:3]
     if product == "OSM":
-        return "d'Osmanthé"
+        return "Osmanthé"
     elif product == "ELB":
-        return "d'Eau à la bouche"
+        return "Eau à la bouche"
     elif product == "LDB":
-        return "de La Dame Blanche"
+        return "La Dame Blanche"
     elif product == "IRI":
-        return "de à l'Iris"
+        return "à l'Iris"
     elif product == "LIM":
-        return "de Lime Absolue"
+        return "Lime Absolue"
     elif product == "MGA":
-        return "de Magnol'ART"
+        return "Magnol'ART"
     elif product == "VFL":
-        return "de Vague de Folie Verte"
+        return "Vague de Folie Verte"
+    else:
+        raise Exception(f"unrecognized perfume: {last_perfume[:3]}")
 
         
-def send_mail(row: pd.Series, fr_mail_template, 
-              en_mail_template, fr_mail_subject, 
-              en_mail_subject, outlook, 
-              sender_account, clients_last_perfume):
-    receiver_name = row["Prénom"]
-    # receiver_email = row["Adresse mail"]
-    receiver_email = "robin.varliette@gmail.com"
-    isFrench = row["Pays"] in ["France", "Belgique"]
+def send_mail(row: pd.Series, fr_mail_template: Template, 
+              en_mail_template: Template, fr_mail_subject : str, 
+              en_mail_subject : str, outlook, 
+              sender_account, clients_last_perfume, mail_path):
+    
+    # Load infos (Country, Sex, Name And Family name) of every clients by their emails
+    clients_by_email = pd.read_excel(load_path + excel_dir_path + client_dir_path + "clients_by_email.xlsx")
+    clients_by_email = clients_by_email.set_index("Email", drop=True)
+    
+    receiver_email = str(row["Email"])
+    # receiver_email = "robin.varliette@gmail.com"
+    print(receiver_email in clients_by_email.index)
 
+    client_info = clients_by_email.loc[receiver_email]
+
+    receiver_name = str(client_info["Prénom"]).strip()
+    receiver_name = receiver_name if receiver_name != "" else "Client"
+    receiver_name = receiver_name.capitalize()
+
+    isFrench = client_info["Pays"] in ["France", "Belgique", "FR", "BE"]
     if isFrench:
         mail_template = fr_mail_template
         mail_subject = fr_mail_subject
-        if row["Civilité"] == "Monsieur":
+        if client_info["Civilité"] == "Monsieur":
             greeting = "Cher "
-        elif row["Civilité"] == "Madame":
-            greeting == "Chère"
+        elif client_info["Civilité"] == "Madame":
+            greeting = "Chère"
         else:
             greeting = "Cher(ère)" 
     else:
@@ -137,20 +156,16 @@ def send_mail(row: pd.Series, fr_mail_template,
         mail_subject = en_mail_subject
         greeting = "Dear" 
 
-    name = row["Prénom"].trim()
-    name = name if name != "" else "Client"
-    name = name.capitalize()
-
     perfume = get_last_perfume(receiver_email, clients_last_perfume)
 
 
-    greeting += " " + name+ ","
+    greeting += " " + receiver_name + ","
 
     # Create mail object
     mail = outlook.CreateItem(0)
 
     # Add images to the mail
-    add_images_as_attachments(mail, mail_dir_path)
+    add_images_as_attachments(mail, mail_path)
 
     # Attribute the correct sender account
     mail._oleobj_.Invoke(*(64209, 0, 8, 0, sender_account))
@@ -159,11 +174,12 @@ def send_mail(row: pd.Series, fr_mail_template,
     mail.Subject = mail_subject
 
     # Format the mail
+    mail_template = Template(mail_template.safe_substitute(perfume=perfume))
     mail_html_formatted = mail_template.safe_substitute(perfume=perfume)
     mail_html_formatted = mail_template.safe_substitute(greeting=greeting)
     mail.HTMLBody = mail_html_formatted
 
-    mail.To = receiver_email
+    mail.To = "robin.varliette@gmail.com"
 
     # Send email
     mail.Send()
