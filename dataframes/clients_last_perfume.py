@@ -17,29 +17,28 @@ products_as_column = \
      "LDB 75S", "LDB 75C", "LDB 30S", "LDB 30C", "LDB E",
      "ENSEMBLE D'ÉCHANTILLONS", "COFFRET DÉCOUVERTE"]
 
-def get_last_perfume(group):
+def get_most_bought_perfume(group):
     email = group["Email"]
     perfume_columns = [c for c in group.columns if c.endswith(('S', 'C')) and c != "ENSEMBLE D'ÉCHANTILLONS"]
     perfume_sales : pd.Series= group[perfume_columns + ['Date']].melt(id_vars=['Date'], var_name='perfume', value_name='sales')
-    # print(perfume_sales)
     if perfume_sales['sales'].sum() > 0:
-        last_sale = perfume_sales.sort_values('sales', ascending=False).iloc[0]
-        return last_sale['perfume']
+        most_bought = perfume_sales.sort_values('sales', ascending=False).iloc[0]
+        return most_bought['perfume']
     else:
         #  print(f"no perfume sale for {email}")
         sample_columns = [c for c in group.columns if c.endswith('E') and c != "COFFRET DÉCOUVERTE"]
         sample_sales = group[sample_columns + ['Date']].melt(id_vars=['Date'], var_name='sample', value_name='sales')
         if sample_sales['sales'].sum() > 0:
-            last_sale = sample_sales.sort_values(['Date'], ascending=[False]).iloc[0]
-            return last_sale['sample']
+            most_bought = sample_sales.sort_values('sales', ascending=False).iloc[0]
+            return most_bought['sample']
         else:
             others = group[["ENSEMBLE D'ÉCHANTILLONS", "COFFRET DÉCOUVERTE", "Date"]].melt(id_vars=['Date'], var_name='product', value_name='sales')
             # print(others)
             if others['sales'].sum() < 0: 
                 print(f"no other sale for {email}")
                 return "Unknown"
-            last_sale = others.sort_values(['Date'], ascending=[False]).iloc[0]
-            return last_sale['product']
+            most_bought = others.sort_values('sales', ascending=False).iloc[0]
+            return most_bought['product']
 
         
 
@@ -53,7 +52,7 @@ def main():
     sales_df = sales_df.sort_values(['Email', 'Date'])
     
     # get the latest purchase for each email
-    by_email = sales_df.groupby(["Email"]).apply(get_last_perfume)
+    by_email = sales_df.groupby(["Email"]).apply(get_most_bought_perfume)
 
     by_email.to_excel(save_path + excel_path + sales_path + "client_last_perfumes.xlsx")
 

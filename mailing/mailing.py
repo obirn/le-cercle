@@ -2,6 +2,7 @@ import pandas as pd
 import win32com.client as win32
 from string import Template
 import os
+import sys
 import re
 
 load_path = "../../Data/Load/"
@@ -19,10 +20,12 @@ def main():
     mail_name = "offre-vfl/"
 
     # Get sales dataframe from excel
-    sales_df = pd.read_excel(load_path + excel_dir_path + sales_dir_path + excel_name)
+    sales_df = pd.read_excel(
+        load_path + excel_dir_path + sales_dir_path + excel_name)
 
     # Get unsubscribed clients
-    unsubscribed_emails = pd.read_excel(load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx")["Email"]
+    unsubscribed_emails = pd.read_excel(
+        load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx")["Email"]
 
     # Keep only subscribed clients
     sales_df = sales_df[~sales_df["Email"].isin(unsubscribed_emails)]
@@ -31,35 +34,53 @@ def main():
     email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
     # Filter the dataframe to keep only rows with valid email addresses
-    sales_df = sales_df[sales_df['Email'].str.contains(email_pattern, regex=True)]
+    sales_df = sales_df[sales_df['Email'].str.contains(
+        email_pattern, regex=True)]
 
     # Confirm the user that he wants to send the mailing
-    input(f"Press enter if you really want to send the mailing to {len(sales_df)} people.")
+    print(f"This mailing concerns {len(sales_df)} people.")
+    print(f"Press [T] to send the mailing to a test email.")
+    print(f"Press [Y] to send the mailing to every clients.")
+    c = sys.stdin.read(1)
+    test_email = None
+    if c == "T":
+        test_email = input(
+            "Enter the email adress the mailing will be sent to (robin.varliette@gmail.com if empty): \n")
+        test_email = "robin.varliette@gmail.com" if test_email == "" else test_email
+        print(f"[TEST] Sending mailing to {test_email}")
+        send_mailing(sales_df, mail_dir_path + mail_name, test_email)
+    elif c == "Y":
+        confirmation = input("Please confirm by writing \"confirm\": ")
+        if confirmation == "confirm":
+            print(f"[PROD] Sending mailing to {len(sales_df)} people.")
+            send_mailing(sales_df, mail_dir_path + mail_name, test_email)
+    else:
+        print(f"Unknown option: {c}")
 
-    # Send the mailing
-    send_mailing(sales_df, mail_dir_path + mail_name)
 
 def get_mail_template(mail_path: str, language: str):
     with open(mail_path+language+".html", encoding='utf-8', mode="r") as file:
 
-        # Replace src by cid in html code 
+        # Replace src by cid in html code
         file_contents = file.read()
         file_contents = re.sub("src=\"images/", "src=\"cid:", file_contents)
-        with open(mail_path+language+"save.html",encoding='utf-8', mode = "w") as save:
+        with open(mail_path+language+"save.html", encoding='utf-8', mode="w") as save:
             save.write(file_contents)
         return Template(file_contents)
-    
+
+
 def add_images_as_attachments(mail: win32.CDispatch, mail_path: str):
     PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
     img_dir = mail_path + "images/"
-    onlyfiles = [f for f in os.listdir(img_dir) if os.path.isfile(os.path.join(img_dir, f))]
+    onlyfiles = [f for f in os.listdir(
+        img_dir) if os.path.isfile(os.path.join(img_dir, f))]
     for img_name in onlyfiles:
-        absolute_img_path = os.getcwd() + "\\" + (img_dir + img_name).replace("/","\\")
+        absolute_img_path = os.getcwd() + "\\" + (img_dir + img_name).replace("/", "\\")
         attachment = mail.Attachments.Add(absolute_img_path)
         attachment.PropertyAccessor.SetProperty(PR_ATTACH_CONTENT_ID, img_name)
 
 
-def send_mailing(df: pd.DataFrame, mail_path: str):
+def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
 
     # Load Outlook client
     outlook = win32.Dispatch('outlook.application')
@@ -80,30 +101,33 @@ def send_mailing(df: pd.DataFrame, mail_path: str):
     en_mail_template = get_mail_template(mail_path, "en")
     print("Loading emails templates OK")
 
-
     fr_mail_subject = "Un Vague De Folie Verte offert !"
     en_mail_subject = "A Vague De Folie Verte for Free !"
 
-    last_perfume_bought : pd.DataFrame = pd.read_excel(load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
-    last_perfume_bought = last_perfume_bought.set_index( "Email", drop=True)
+    last_perfume_bought: pd.DataFrame = pd.read_excel(
+        load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
+    last_perfume_bought = last_perfume_bought.set_index("Email", drop=True)
 
     for index, row in df.iterrows():
         # try:
-        send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject, 
+        send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
                   en_mail_subject, outlook, sender_account, last_perfume_bought,
-                  mail_path)
+                  mail_path, test_email)
         # except Exception as e:
         #     email = row["Email"]
         #     print(f"Couldn't send mail to {email}")
         #     print(e.args)
         #     print(e)          # __str__ allows args to be printed directly
 
-def get_last_perfume(email: str, clients_last_perfume: pd.DataFrame):
-    last_perfume = clients_last_perfume.loc[email].iloc[0]
-    print(last_perfume)
-    if last_perfume == "ENSEMBLE D'ECHANTILLONS":
-        return ""
-    product = last_perfume[:3]
+
+def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
+    most_bought_perfume = str(clients_last_perfume.loc[email].iloc[0])
+    print(most_bought_perfume)
+    if most_bought_perfume in ["ENSEMBLE D'ECHANTILLONS"]:
+        return "Vague de Folie Verte"
+    product = most_bought_perfume[:3]
+    if product == "VFL":
+        return "Vague de Folie Verte"
     if product == "OSM":
         return "Osmanthé"
     elif product == "ELB":
@@ -116,24 +140,23 @@ def get_last_perfume(email: str, clients_last_perfume: pd.DataFrame):
         return "Lime Absolue"
     elif product == "MGA":
         return "Magnol'ART"
-    elif product == "VFL":
-        return "Vague de Folie Verte"
     else:
-        raise Exception(f"unrecognized perfume: {last_perfume[:3]}")
+        raise Exception(f"unrecognized perfume: {most_bought_perfume[:3]}")
 
-        
-def send_mail(row: pd.Series, fr_mail_template: Template, 
-              en_mail_template: Template, fr_mail_subject : str, 
-              en_mail_subject : str, outlook, 
-              sender_account, clients_last_perfume, mail_path):
-    
+
+def send_mail(row: pd.Series, fr_mail_template: Template,
+              en_mail_template: Template, fr_mail_subject: str,
+              en_mail_subject: str, outlook,
+              sender_account, clients_last_perfume, mail_path,
+              test_email):
+
     # Load infos (Country, Sex, Name And Family name) of every clients by their emails
-    clients_by_email = pd.read_excel(load_path + excel_dir_path + client_dir_path + "clients_by_email.xlsx")
+    clients_by_email = pd.read_excel(
+        load_path + excel_dir_path + client_dir_path + "clients_by_email.xlsx")
     clients_by_email = clients_by_email.set_index("Email", drop=True)
-    
+
     receiver_email = str(row["Email"])
-    # receiver_email = "robin.varliette@gmail.com"
-    print(receiver_email in clients_by_email.index)
+    # print(receiver_email in clients_by_email.index)
 
     client_info = clients_by_email.loc[receiver_email]
 
@@ -150,14 +173,21 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
         elif client_info["Civilité"] == "Madame":
             greeting = "Chère"
         else:
-            greeting = "Cher(ère)" 
+            greeting = "Cher(ère)"
     else:
         mail_template = en_mail_template
         mail_subject = en_mail_subject
-        greeting = "Dear" 
+        greeting = "Dear"
 
-    perfume = get_last_perfume(receiver_email, clients_last_perfume)
-
+    most_bought_perfume = get_most_bought_perfume(receiver_email, clients_last_perfume)
+    if most_bought_perfume == "Vague de Folie Verte":
+        most_bought_perfume = ""
+        passion = "nos parfums" if isFrench else "our perfumes"
+        discover = "re-" + ("découvrir" if isFrench else "discover")
+    else:
+        passion = most_bought_perfume
+        most_bought_perfume = ("de " if isFrench else "of ") + most_bought_perfume
+        discover = ("découvrir" if isFrench else "discover")
 
     greeting += " " + receiver_name + ","
 
@@ -174,17 +204,22 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     mail.Subject = mail_subject
 
     # Format the mail
-    mail_template = Template(mail_template.safe_substitute(perfume=perfume))
-    mail_html_formatted = mail_template.safe_substitute(perfume=perfume)
-    mail_html_formatted = mail_template.safe_substitute(greeting=greeting)
+    mail_html_formatted = mail_template.safe_substitute(passion = passion, 
+                                                        perfume = most_bought_perfume, 
+                                                        greeting=greeting,
+                                                        discover = discover)
     mail.HTMLBody = mail_html_formatted
 
-    mail.To = "robin.varliette@gmail.com"
+    # Send to test e-mail adress if in test mode.
+    sendTo = test_email if test_email != None else receiver_email
+    mail.To = sendTo
 
     # Send email
     mail.Send()
-    print(f"Mail sent at {receiver_email}")
-    input()
+    print(f"Mail for {receiver_email} sent to {sendTo}")
+    # input()
+
+
 
 if __name__ == "__main__":
     main()
