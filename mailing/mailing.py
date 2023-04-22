@@ -123,8 +123,8 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
 def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
     most_bought_perfume = str(clients_last_perfume.loc[email].iloc[0])
     print(most_bought_perfume)
-    if most_bought_perfume in ["ENSEMBLE D'ECHANTILLONS"]:
-        return "Vague de Folie Verte"
+    if most_bought_perfume == "ENSEMBLE D'ECHANTILLONS":
+        return "ENSEMBLE D'ECHANTILLONS"
     product = most_bought_perfume[:3]
     if product == "VFL":
         return "Vague de Folie Verte"
@@ -180,14 +180,18 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
         greeting = "Dear"
 
     most_bought_perfume = get_most_bought_perfume(receiver_email, clients_last_perfume)
-    if most_bought_perfume == "Vague de Folie Verte":
+    
+    if most_bought_perfume in ["ENSEMBLE D'ECHANTILLONS", "Vague de Folie Verte"]:
         most_bought_perfume = ""
-        passion = "nos parfums" if isFrench else "our perfumes"
         discover = "re-" + ("découvrir" if isFrench else "discover")
+        if most_bought_perfume == "Vague de Folie Verte":
+            passion = most_bought_perfume
+        else:
+            passion = "nos parfums" if isFrench else "our perfumes"
     else:
-        passion = most_bought_perfume
+        passion =  most_bought_perfume
         most_bought_perfume = ("de " if isFrench else "of ") + most_bought_perfume
-        discover = ("découvrir" if isFrench else "discover")
+        
 
     greeting += " " + receiver_name + ","
 
