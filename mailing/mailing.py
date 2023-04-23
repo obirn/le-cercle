@@ -83,6 +83,7 @@ def add_images_as_attachments(mail: win32.CDispatch, mail_path: str):
 def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
 
     # Load Outlook client
+    print("Loading Outlook Client...")
     outlook = win32.Dispatch('outlook.application')
     print("Loading Outlook Client OK")
 
@@ -109,23 +110,22 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     last_perfume_bought = last_perfume_bought.set_index("Email", drop=True)
 
     for index, row in df.iterrows():
-        # try:
-        send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
-                en_mail_subject, outlook, sender_account, last_perfume_bought,
-                mail_path, test_email)
-        # except Exception as e:
-        #     email = row["Email"]
-        #     print(f"Couldn't send mail to {email}")
-        #     print(e)       
+        try:
+            send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
+                    en_mail_subject, outlook, sender_account, last_perfume_bought,
+                    mail_path, test_email)
+        except Exception as e:
+            email = row["Email"]
+            print(f"Couldn't send mail to {email}")
+            print(e)       
 
 
 def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
     most_bought_perfume = str(clients_last_perfume.loc[email].iloc[0])
-    print(most_bought_perfume)
-    if most_bought_perfume == "ENSEMBLE D'ECHANTILLONS":
-        return "ENSEMBLE D'ECHANTILLONS"
     product = most_bought_perfume[:3]
-    if product == "VFL":
+    if product == "ENS":
+        return "ENSEMBLE D'ECHANTILLONS"
+    elif product == "VFL":
         return "Vague de Folie Verte"
     if product == "OSM":
         return "Osmanthé"
@@ -159,7 +159,7 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     client_info = clients_by_email.loc[receiver_email]
 
     receiver_name = str(client_info["Prénom"]).strip()
-    receiver_name = receiver_name if receiver_name != "" else "Client"
+    receiver_name = receiver_name if receiver_name != "Nan" else "Client"
     receiver_name = receiver_name.capitalize()
 
     isFrench = client_info["Pays"] in ["France", "Belgique", "FR", "BE"]
@@ -218,11 +218,11 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     mail.To = sendTo
 
     # Send email
-    mail.Send()
-    print(f"Mail for {receiver_email} sent to {sendTo}")
+    # mail.Send()
+    print("Mail for {:40s} sent to {}".format(receiver_email, sendTo))
 
-    if test_email != None:
-        input("Press [Enter] to continue")
+    # if test_email != None:
+    #     input("Press [Enter] to continue")
 
 
 
