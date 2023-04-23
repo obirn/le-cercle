@@ -111,13 +111,12 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     for index, row in df.iterrows():
         # try:
         send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
-                  en_mail_subject, outlook, sender_account, last_perfume_bought,
-                  mail_path, test_email)
+                en_mail_subject, outlook, sender_account, last_perfume_bought,
+                mail_path, test_email)
         # except Exception as e:
         #     email = row["Email"]
         #     print(f"Couldn't send mail to {email}")
-        #     print(e.args)
-        #     print(e)          # __str__ allows args to be printed directly
+        #     print(e)       
 
 
 def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
@@ -156,7 +155,6 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     clients_by_email = clients_by_email.set_index("Email", drop=True)
 
     receiver_email = str(row["Email"])
-    # print(receiver_email in clients_by_email.index)
 
     client_info = clients_by_email.loc[receiver_email]
 
@@ -182,7 +180,7 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     most_bought_perfume = get_most_bought_perfume(receiver_email, clients_last_perfume)
     
     if most_bought_perfume in ["ENSEMBLE D'ECHANTILLONS", "Vague de Folie Verte"]:
-        most_bought_perfume = ""
+        purchase = ""
         discover = "re-" + ("découvrir" if isFrench else "discover")
         if most_bought_perfume == "Vague de Folie Verte":
             passion = most_bought_perfume
@@ -190,7 +188,8 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
             passion = "nos parfums" if isFrench else "our perfumes"
     else:
         passion =  most_bought_perfume
-        most_bought_perfume = ("de " if isFrench else "of ") + most_bought_perfume
+        discover = ("découvrir" if isFrench else "discover")
+        purchase = ("de " if isFrench else "of ") + most_bought_perfume
         
 
     greeting += " " + receiver_name + ","
@@ -209,8 +208,8 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
 
     # Format the mail
     mail_html_formatted = mail_template.safe_substitute(passion = passion, 
-                                                        perfume = most_bought_perfume, 
-                                                        greeting=greeting,
+                                                        purchase = purchase, 
+                                                        greeting = greeting,
                                                         discover = discover)
     mail.HTMLBody = mail_html_formatted
 
@@ -221,7 +220,9 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     # Send email
     mail.Send()
     print(f"Mail for {receiver_email} sent to {sendTo}")
-    # input()
+
+    if test_email != None:
+        input("Press [Enter] to continue")
 
 
 
