@@ -1,6 +1,6 @@
 import pandas as pd
-import win32com.client as win32
 from string import Template
+import smtplib
 import os
 import sys
 import re
@@ -69,7 +69,7 @@ def get_mail_template(mail_path: str, language: str):
         return Template(file_contents)
 
 
-def add_images_as_attachments(mail: win32.CDispatch, mail_path: str):
+def add_images_as_attachments(mail, mail_path: str):
     PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
     img_dir = mail_path + "images/"
     onlyfiles = [f for f in os.listdir(
@@ -82,21 +82,17 @@ def add_images_as_attachments(mail: win32.CDispatch, mail_path: str):
 
 def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
 
-    # Load Outlook client
-    print("Loading Outlook Client...")
-    outlook = win32.Dispatch('outlook.application')
-    print("Loading Outlook Client OK")
+    # Load Smtp server
+    print("Loading SMTP Server...")
+    smtp_server = smtplib.SMTP_SSL('mail.gandi.net', 465)
 
-    # Get sender account
-    sender_email = "serviceclient@lecercledesparfumeurscreateurs.com"
-    sender_account = None
-    for account in outlook.Session.Accounts:
-        if account.DisplayName == sender_email:
-            sender_account = account
-            break
-    if sender_account is None:
-        print("Error: couldn't find sender account with email "+sender_email)
-    print("Getting Sender account OK")
+    smtp_server.ehlo()
+
+    smtp_server.login("serviceclient@lecercledesparfumeurscreateurs.com", os.getenv("SMTP_CLIENT_PASS"))
+
+    smtp_server.close()
+
+    print("Loading SMTP Server OK")
 
     fr_mail_template = get_mail_template(mail_path, "fr")
     en_mail_template = get_mail_template(mail_path, "en")
@@ -112,7 +108,7 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     for index, row in df.iterrows():
         try:
             send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
-                    en_mail_subject, outlook, sender_account, last_perfume_bought,
+                    en_mail_subject, smtp_server, last_perfume_bought,
                     mail_path, test_email)
         except Exception as e:
             email = row["Email"]
@@ -145,8 +141,8 @@ def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
 
 def send_mail(row: pd.Series, fr_mail_template: Template,
               en_mail_template: Template, fr_mail_subject: str,
-              en_mail_subject: str, outlook,
-              sender_account, clients_last_perfume, mail_path,
+              en_mail_subject: str, smtp_server,
+              mail_path,
               test_email):
 
     # Load infos (Country, Sex, Name And Family name) of every clients by their emails
@@ -177,52 +173,53 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
         mail_subject = en_mail_subject
         greeting = "Dear"
 
-    most_bought_perfume = get_most_bought_perfume(receiver_email, clients_last_perfume)
+    # Add the name to the greeting.
+    greeting += " " + receiver_name + ","
     
-    if most_bought_perfume in ["ENSEMBLE D'ECHANTILLONS", "Vague de Folie Verte"]:
-        purchase = ""
-        discover = "re-" + ("découvrir" if isFrench else "discover")
-        if most_bought_perfume == "Vague de Folie Verte":
-            passion = most_bought_perfume
-        else:
-            passion = "nos parfums" if isFrench else "our perfumes"
-    else:
-        passion =  most_bought_perfume
-        discover = ("découvrir" if isFrench else "discover")
-        purchase = ("de " if isFrench else "of ") + most_bought_perfume
+    # most_bought_perfume = get_most_bought_perfume(receiver_email, clients_last_perfume)
+    
+    # if most_bought_perfume in ["ENSEMBLE D'ECHANTILLONS", "Vague de Folie Verte"]:
+    #     purchase = ""
+    #     discover = "re-" + ("découvrir" if isFrench else "discover")
+    #     if most_bought_perfume == "Vague de Folie Verte":
+    #         passion = most_bought_perfume
+    #     else:
+    #         passion = "nos parfums" if isFrench else "our perfumes"
+    # else:
+    #     passion =  most_bought_perfume
+    #     discover = ("découvrir" if isFrench else "discover")
+    #     purchase = ("de " if isFrench else "of ") + most_bought_perfume
         
 
-    greeting += " " + receiver_name + ","
 
     # Create mail object
-    mail = outlook.CreateItem(0)
 
     # Add images to the mail
-    add_images_as_attachments(mail, mail_path)
+    # add_images_as_attachments(mail, mail_path)
 
     # Attribute the correct sender account
-    mail._oleobj_.Invoke(*(64209, 0, 8, 0, sender_account))
 
     # Set email's Subject
-    mail.Subject = mail_subject
 
     # Format the mail
-    mail_html_formatted = mail_template.safe_substitute(passion = passion, 
-                                                        purchase = purchase, 
-                                                        greeting = greeting,
-                                                        discover = discover)
-    mail.HTMLBody = mail_html_formatted
+    mail_html_formatted = mail_template.safe_substitute(greeting = greeting);
+    
+    # mail_html_formatted = mail_template.safe_substitute(passion = passion, 
+    #                                                     purchase = purchase, 
+    #                                                     greeting = greeting,
+    #                                                     discover = discover)
+
 
     # Send to test e-mail adress if in test mode.
     sendTo = test_email if test_email != None else receiver_email
-    mail.To = sendTo
 
     # Send email
     # mail.Send()
     print("Mail for {:40s} sent to {}".format(receiver_email, sendTo))
 
-    # if test_email != None:
-    #     input("Press [Enter] to continue")
+    if test_email != None:
+        input("Press [Enter] to continue")
+
 
 
 
