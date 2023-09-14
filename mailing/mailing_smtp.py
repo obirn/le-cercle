@@ -1,5 +1,6 @@
 import pandas as pd
 from string import Template
+from email.message import EmailMessage
 import smtplib
 import os
 import sys
@@ -90,8 +91,6 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
 
     smtp_server.login("serviceclient@lecercledesparfumeurscreateurs.com", os.getenv("SMTP_CLIENT_PASS"))
 
-    smtp_server.close()
-
     print("Loading SMTP Server OK")
 
     fr_mail_template = get_mail_template(mail_path, "fr")
@@ -108,12 +107,13 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     for index, row in df.iterrows():
         try:
             send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
-                    en_mail_subject, smtp_server, last_perfume_bought,
-                    mail_path, test_email)
+                    en_mail_subject, smtp_server, mail_path, test_email)
         except Exception as e:
             email = row["Email"]
             print(f"Couldn't send mail to {email}")
-            print(e)       
+            print(e)      
+
+    smtp_server.close() 
 
 
 def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
@@ -193,28 +193,30 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
 
 
     # Create mail object
+    email = EmailMessage()
 
     # Add images to the mail
     # add_images_as_attachments(mail, mail_path)
 
     # Attribute the correct sender account
+    sender = "serviceclient@lecercledesparfumeurscreateurs.com"
+    email["From"] = sender
 
     # Set email's Subject
+    email["Subject"] = "Une nouvelle offre du cercle!"
 
     # Format the mail
     mail_html_formatted = mail_template.safe_substitute(greeting = greeting);
-    
-    # mail_html_formatted = mail_template.safe_substitute(passion = passion, 
-    #                                                     purchase = purchase, 
-    #                                                     greeting = greeting,
-    #                                                     discover = discover)
-
+    print(mail_html_formatted)
+    email.set_content(mail_html_formatted, subtype="html")
 
     # Send to test e-mail adress if in test mode.
     sendTo = test_email if test_email != None else receiver_email
+    email["To"] = sendTo
 
     # Send email
-    # mail.Send()
+    smtp_server.sendmail(sender, sendTo, email.as_string())
+
     print("Mail for {:40s} sent to {}".format(receiver_email, sendTo))
 
     if test_email != None:
