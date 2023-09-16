@@ -1,6 +1,10 @@
 import pandas as pd
 from string import Template
+
 from email.message import EmailMessage
+from email.utils import make_msgid
+import mimetypes
+
 import smtplib
 import os
 import sys
@@ -17,12 +21,14 @@ mail_dir_path = "./mails/"
 def main():
 
     # Edit this section
-    excel_name = "client_last_perfumes.xlsx"
-    mail_name = "offre-vfl/"
+    excel_name = "all_sales_over_time.xlsx"
+    mail_name = "relance-septembre/"
 
     # Get sales dataframe from excel
     sales_df = pd.read_excel(
         load_path + excel_dir_path + sales_dir_path + excel_name)
+    
+
 
     # Get unsubscribed clients
     unsubscribed_emails = pd.read_excel(
@@ -65,20 +71,26 @@ def get_mail_template(mail_path: str, language: str):
         # Replace src by cid in html code
         file_contents = file.read()
         file_contents = re.sub("src=\"images/", "src=\"cid:", file_contents)
-        with open(mail_path+language+"save.html", encoding='utf-8', mode="w") as save:
+        with open(mail_path+language+"_save.html", encoding='utf-8', mode="w") as save:
             save.write(file_contents)
         return Template(file_contents)
 
 
-def add_images_as_attachments(mail, mail_path: str):
-    PR_ATTACH_CONTENT_ID = "http://schemas.microsoft.com/mapi/proptag/0x3712001F"
+def add_images_as_attachments(mail : EmailMessage, mail_path: str):
     img_dir = mail_path + "images/"
     onlyfiles = [f for f in os.listdir(
         img_dir) if os.path.isfile(os.path.join(img_dir, f))]
     for img_name in onlyfiles:
-        absolute_img_path = os.getcwd() + "\\" + (img_dir + img_name).replace("/", "\\")
-        attachment = mail.Attachments.Add(absolute_img_path)
-        attachment.PropertyAccessor.SetProperty(PR_ATTACH_CONTENT_ID, img_name)
+        absolute_img_path = os.getcwd() + "/" + (img_dir + img_name)
+        # know the Content-Type of the image
+        maintype, subtype = mimetypes.guess_type(absolute_img_path)[0].split('/')
+
+        img = open(absolute_img_path)
+        # attach it
+        mail.get_payload()[1].add_related(img.read(), 
+                                            maintype=maintype, 
+                                            subtype=subtype, 
+                                            cid=img_name)
 
 
 def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
@@ -111,9 +123,9 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
         except Exception as e:
             email = row["Email"]
             print(f"Couldn't send mail to {email}")
-            print(e)      
+            print(e)
 
-    smtp_server.close() 
+    smtp_server.close()    
 
 
 def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
@@ -141,8 +153,7 @@ def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
 
 def send_mail(row: pd.Series, fr_mail_template: Template,
               en_mail_template: Template, fr_mail_subject: str,
-              en_mail_subject: str, smtp_server,
-              mail_path,
+              en_mail_subject: str, smtp_server, mail_path,
               test_email):
 
     # Load infos (Country, Sex, Name And Family name) of every clients by their emails
@@ -175,22 +186,6 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
 
     # Add the name to the greeting.
     greeting += " " + receiver_name + ","
-    
-    # most_bought_perfume = get_most_bought_perfume(receiver_email, clients_last_perfume)
-    
-    # if most_bought_perfume in ["ENSEMBLE D'ECHANTILLONS", "Vague de Folie Verte"]:
-    #     purchase = ""
-    #     discover = "re-" + ("découvrir" if isFrench else "discover")
-    #     if most_bought_perfume == "Vague de Folie Verte":
-    #         passion = most_bought_perfume
-    #     else:
-    #         passion = "nos parfums" if isFrench else "our perfumes"
-    # else:
-    #     passion =  most_bought_perfume
-    #     discover = ("découvrir" if isFrench else "discover")
-    #     purchase = ("de " if isFrench else "of ") + most_bought_perfume
-        
-
 
     # Create mail object
     email = EmailMessage()
@@ -203,7 +198,7 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     email["From"] = sender
 
     # Set email's Subject
-    email["Subject"] = "Une nouvelle offre du cercle!"
+    email["Subject"] = mail_subject
 
     # Format the mail
     mail_html_formatted = mail_template.safe_substitute(greeting = greeting);
@@ -221,8 +216,6 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
 
     if test_email != None:
         input("Press [Enter] to continue")
-
-
 
 
 if __name__ == "__main__":
