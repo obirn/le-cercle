@@ -27,8 +27,6 @@ def main():
     # Get sales dataframe from excel
     sales_df = pd.read_excel(
         load_path + excel_dir_path + sales_dir_path + excel_name)
-    
-
 
     # Get unsubscribed clients
     unsubscribed_emails = pd.read_excel(
@@ -76,7 +74,7 @@ def get_mail_template(mail_path: str, language: str):
         return Template(file_contents)
 
 
-def add_images_as_attachments(mail : EmailMessage, mail_path: str):
+def add_images_as_attachments(email : EmailMessage, mail_path: str):
     img_dir = mail_path + "images/"
     onlyfiles = [f for f in os.listdir(
         img_dir) if os.path.isfile(os.path.join(img_dir, f))]
@@ -85,12 +83,14 @@ def add_images_as_attachments(mail : EmailMessage, mail_path: str):
         # know the Content-Type of the image
         maintype, subtype = mimetypes.guess_type(absolute_img_path)[0].split('/')
 
-        img = open(absolute_img_path)
+        img = open(absolute_img_path, "rb")
         # attach it
-        mail.get_payload()[1].add_related(img.read(), 
-                                            maintype=maintype, 
-                                            subtype=subtype, 
-                                            cid=img_name)
+        email.add_related(img.read(), 
+                        maintype=maintype, 
+                        subtype=subtype, 
+                        cid=img_name)
+
+        img.close()
 
 
 def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
@@ -109,8 +109,8 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     en_mail_template = get_mail_template(mail_path, "en")
     print("Loading emails templates OK")
 
-    fr_mail_subject = "Un Vague De Folie Verte offert !"
-    en_mail_subject = "A Vague De Folie Verte for Free !"
+    fr_mail_subject = "Test 1"
+    en_mail_subject = "Test 1"
 
     last_perfume_bought: pd.DataFrame = pd.read_excel(
         load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
@@ -191,7 +191,6 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     email = EmailMessage()
 
     # Add images to the mail
-    # add_images_as_attachments(mail, mail_path)
 
     # Attribute the correct sender account
     sender = "serviceclient@lecercledesparfumeurscreateurs.com"
@@ -200,10 +199,14 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     # Set email's Subject
     email["Subject"] = mail_subject
 
+    
     # Format the mail
     mail_html_formatted = mail_template.safe_substitute(greeting = greeting);
-    print(mail_html_formatted)
+
     email.set_content(mail_html_formatted, subtype="html")
+
+    add_images_as_attachments(email=email, mail_path=mail_path)
+
 
     # Send to test e-mail adress if in test mode.
     sendTo = test_email if test_email != None else receiver_email
