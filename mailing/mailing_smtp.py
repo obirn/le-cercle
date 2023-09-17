@@ -109,8 +109,8 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     en_mail_template = get_mail_template(mail_path, "en")
     print("Loading emails templates OK")
 
-    fr_mail_subject = "Test 1"
-    en_mail_subject = "Test 1"
+    fr_mail_subject = "L'aventure du cercle se poursuit !"
+    en_mail_subject = "The adventure of Le Cercle goes on !"
 
     last_perfume_bought: pd.DataFrame = pd.read_excel(
         load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
