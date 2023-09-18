@@ -12,13 +12,14 @@ import os
 import sys
 import re
 
+# The script has to be executed in its directory !
 load_path = "../../Data/Load/"
 save_path = "../../Data/Save/"
 excel_dir_path = "Excels/"
 client_dir_path = "Clients/"
 sales_dir_path = "Ventes/"
 mail_dir_path = "./mails/"
-
+log_dir_path = "./logs/"
 
 def main():
 
@@ -37,12 +38,17 @@ def main():
     # Keep only subscribed clients
     sales_df = sales_df[~sales_df["Email"].isin(unsubscribed_emails)]
 
+    # Keep only unique emails
+    sales_df = sales_df.drop_duplicates(subset=["Email"])
+    
+    # Keep only english clients
+    # sales_df = sales_df[~sales_df["Pays"].isin(["France", "Belgique", "FR", "BE"])]
+
     # Define a regular expression pattern for email addresses
     email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
-    # Filter the dataframe to keep only rows with valid email addresses
-    sales_df = sales_df[sales_df['Email'].str.contains(
-        email_pattern, regex=True)]
+    # Remove unvalid email adresses
+    sales_df = sales_df[sales_df['Email'].str.contains(email_pattern, regex=True)]
 
     # Confirm the user that he wants to send the mailing
     print(f"This mailing concerns {len(sales_df)} people.")
@@ -114,21 +120,17 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     en_mail_template = get_mail_template(mail_path, "en")
     print("Loading emails templates OK")
 
-    fr_mail_subject = "L'aventure du cercle se poursuit !"
-    en_mail_subject = "The adventure of Le Cercle goes on !"
+    fr_mail_subject = "L'aventure du Cercle des Parfumeurs Créateurs se poursuit !"
+    en_mail_subject = "The Adventure of Le Cercle des Parfumeurs Créateurs goes on !"
 
     last_perfume_bought: pd.DataFrame = pd.read_excel(
         load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
     last_perfume_bought = last_perfume_bought.set_index("Email", drop=True)
 
+    # Create a log file
     for _, row in df.iterrows():
-        try:
-            send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
+        send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
                     en_mail_subject, smtp_client, imap_client, mail_path, test_email)
-        except Exception as e:
-            email = row["Email"]
-            print(f"Couldn't send mail to {email}")
-            print(e)
 
     smtp_client.close()
     imap_client.logout()
@@ -172,15 +174,15 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     client_info = clients_by_email.loc[receiver_email]
 
     receiver_name = str(client_info["Prénom"]).strip()
-    receiver_name = receiver_name if receiver_name != "Nan" else "Client"
     receiver_name = receiver_name.capitalize()
-
+    receiver_name = receiver_name if receiver_name != "Nan" else "Client"
+   
     isFrench = client_info["Pays"] in ["France", "Belgique", "FR", "BE"]
     if isFrench:
         mail_template = fr_mail_template
         mail_subject = fr_mail_subject
         if client_info["Civilité"] == "Monsieur":
-            greeting = "Cher "
+            greeting = "Cher"
         elif client_info["Civilité"] == "Madame":
             greeting = "Chère"
         else:
@@ -190,7 +192,7 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
         mail_subject = en_mail_subject
         greeting = "Dear"
 
-    # Add the name to the greeting.
+    # Append the name to the greeting.
     greeting += " " + receiver_name + ","
 
     # Create mail object
@@ -222,18 +224,19 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     try:
         dict_error = "None"
         print("Sending mail to {} for {}".format(sendTo, receiver_email))
-        # dict_error = smtp_client.sendmail(sender, sendTo, email.as_string())
+        dict_error = smtp_client.sendmail(sender, sendTo, email.as_string())
     except Exception as e:
         print("Couldn't send mail to {}".format(sendTo))
         print("Got exception {}".format(str(e)))
         print("With dictionary: {}".format(str(dict_error)))
     else:
-        print("Mail sent succesfully")
-        # imap_client.append('Sent', '', imaplib.Time2Internaldate(time()), email.as_string().encode('utf-8'))
+        # print("Mail sent succesfully")
+        imap_client.append('Sent', '', imaplib.Time2Internaldate(time()), email.as_string().encode('utf-8'))
+        # print("Mail synced with Sent folder on IMAP server successfully")
 
 
-    # if test_email != None:
-    #     input("Press [Enter] to continue")
+    if test_email != None:
+        input("Press [Enter] to continue")
 
 
 if __name__ == "__main__":
