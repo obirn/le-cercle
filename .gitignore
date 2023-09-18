@@ -4,4 +4,4 @@ lib/
 lib64/
 *.cfg
 *credentials.py
-__pycache__
+*__pycache__
