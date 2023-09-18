@@ -1,11 +1,13 @@
 import pandas as pd
 from string import Template
+from credentials import *
 
 from email.message import EmailMessage
-from email.utils import make_msgid
 import mimetypes
-
 import smtplib
+import imaplib
+from time import time
+
 import os
 import sys
 import re
@@ -95,15 +97,18 @@ def add_images_as_attachments(email : EmailMessage, mail_path: str):
 
 def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
 
-    # Load Smtp server
-    print("Loading SMTP Server...")
-    smtp_server = smtplib.SMTP_SSL('mail.gandi.net', 465)
-
-    smtp_server.ehlo()
-
-    smtp_server.login("serviceclient@lecercledesparfumeurscreateurs.com", os.getenv("SMTP_CLIENT_PASS"))
-
+    # Load SMTP client
+    print("Loading SMTP Client...")
+    smtp_client = smtplib.SMTP_SSL(host='mail.gandi.net',port=465)
+    smtp_client.ehlo()
+    smtp_client.login(smtp_client_id, smtp_client_pass)
     print("Loading SMTP Server OK")
+
+    # Load IMAP client
+    print("Loading IMAP client...")
+    imap_client = imaplib.IMAP4_SSL(host="mail.gandi.net",port=993)
+    imap_client.login(smtp_client_id, smtp_client_pass)
+    print("IMAP client OK")
 
     fr_mail_template = get_mail_template(mail_path, "fr")
     en_mail_template = get_mail_template(mail_path, "en")
@@ -116,16 +121,17 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
         load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
     last_perfume_bought = last_perfume_bought.set_index("Email", drop=True)
 
-    for index, row in df.iterrows():
+    for _, row in df.iterrows():
         try:
             send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
-                    en_mail_subject, smtp_server, mail_path, test_email)
+                    en_mail_subject, smtp_client, imap_client, mail_path, test_email)
         except Exception as e:
             email = row["Email"]
             print(f"Couldn't send mail to {email}")
             print(e)
 
-    smtp_server.close()    
+    smtp_client.close()
+    imap_client.logout()
 
 
 def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
@@ -153,7 +159,7 @@ def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
 
 def send_mail(row: pd.Series, fr_mail_template: Template,
               en_mail_template: Template, fr_mail_subject: str,
-              en_mail_subject: str, smtp_server, mail_path,
+              en_mail_subject: str, smtp_client, imap_client, mail_path,
               test_email):
 
     # Load infos (Country, Sex, Name And Family name) of every clients by their emails
@@ -213,12 +219,21 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     email["To"] = sendTo
 
     # Send email
-    smtp_server.sendmail(sender, sendTo, email.as_string())
+    try:
+        dict_error = "None"
+        print("Sending mail to {} for {}".format(sendTo, receiver_email))
+        # dict_error = smtp_client.sendmail(sender, sendTo, email.as_string())
+    except Exception as e:
+        print("Couldn't send mail to {}".format(sendTo))
+        print("Got exception {}".format(str(e)))
+        print("With dictionary: {}".format(str(dict_error)))
+    else:
+        print("Mail sent succesfully")
+        # imap_client.append('Sent', '', imaplib.Time2Internaldate(time()), email.as_string().encode('utf-8'))
 
-    print("Mail for {:40s} sent to {}".format(receiver_email, sendTo))
 
-    if test_email != None:
-        input("Press [Enter] to continue")
+    # if test_email != None:
+    #     input("Press [Enter] to continue")
 
 
 if __name__ == "__main__":
