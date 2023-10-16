@@ -21,37 +21,17 @@ sales_dir_path = "Ventes/"
 mail_dir_path = "./mails/"
 log_dir_path = "./logs/"
 
+# Edit this section
+excel_name = "all_sales_over_time.xlsx"
+mail_name = "relance-octobre/"
+
 def main():
-
-    # Edit this section
-    excel_name = "all_sales_over_time.xlsx"
-    mail_name = "relance-septembre/"
-
-    # Get sales dataframe from excel
-    sales_df = pd.read_excel(
-        load_path + excel_dir_path + sales_dir_path + excel_name)
-
-    # Get unsubscribed clients
-    unsubscribed_emails = pd.read_excel(
-        load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx")["Email"]
-
-    # Keep only subscribed clients
-    sales_df = sales_df[~sales_df["Email"].isin(unsubscribed_emails)]
-
-    # Keep only unique emails
-    sales_df = sales_df.drop_duplicates(subset=["Email"])
-    
-    # Keep only english clients
-    # sales_df = sales_df[~sales_df["Pays"].isin(["France", "Belgique", "FR", "BE"])]
-
-    # Define a regular expression pattern for email addresses
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-
-    # Remove unvalid email adresses
-    sales_df = sales_df[sales_df['Email'].str.contains(email_pattern, regex=True)]
+    mailing_df = get_mailing_dataframe()
 
     # Confirm the user that he wants to send the mailing
-    print(f"This mailing concerns {len(sales_df)} people.")
+    print(f"This mailing is named: {mail_name}")
+    print(f"The clientele data has been loaded from the excel: {excel_name}")
+    print(f"This mailing concerns {len(mailing_df)} people.")
     print(f"Press [T] to send the mailing to a test email.")
     print(f"Press [Y] to send the mailing to every clients.")
     c = sys.stdin.read(1)
@@ -61,14 +41,41 @@ def main():
             "Enter the email adress the mailing will be sent to (robin.varliette@gmail.com if empty): \n")
         test_email = "robin.varliette@gmail.com" if test_email == "" else test_email
         print(f"[TEST] Sending mailing to {test_email}")
-        send_mailing(sales_df, mail_dir_path + mail_name, test_email)
+        send_mailing(mailing_df, mail_dir_path + mail_name, test_email)
     elif c == "Y":
         confirmation = input("Please confirm by writing \"confirm\": ")
         if confirmation == "confirm":
-            print(f"[PROD] Sending mailing to {len(sales_df)} people.")
-            send_mailing(sales_df, mail_dir_path + mail_name, test_email)
+            print(f"[PROD] Sending mailing to {len(mailing_df)} people.")
+            send_mailing(mailing_df, mail_dir_path + mail_name, test_email)
     else:
         print(f"Unknown option: {c}")
+
+
+def get_mailing_dataframe()->pd.DataFrame:
+        # Get sales dataframe from excel
+    mailing_df = pd.read_excel(
+        load_path + excel_dir_path + sales_dir_path + excel_name)
+
+    # Get unsubscribed clients
+    unsubscribed_emails = pd.read_excel(
+        load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx")["Email"]
+
+    # Keep only subscribed clients
+    mailing_df = mailing_df[~mailing_df["Email"].isin(unsubscribed_emails)]
+
+    # Keep only unique emails
+    mailing_df = mailing_df.drop_duplicates(subset=["Email"])
+    
+    # Keep only english clients
+    # mailing_df = mailing_df[~mailing_df["Pays"].isin(["France", "Belgique", "FR", "BE"])]
+
+    # Define a regular expression pattern for email addresses
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+
+    # Remove unvalid email adresses
+    mailing_df = mailing_df[mailing_df['Email'].str.contains(email_pattern, regex=True)]
+
+    return mailing_df
 
 
 def get_mail_template(mail_path: str, language: str):
@@ -76,7 +83,7 @@ def get_mail_template(mail_path: str, language: str):
 
         # Replace src by cid in html code
         file_contents = file.read()
-        file_contents = re.sub("src=\"images/", "src=\"cid:", file_contents)
+        file_contents = re.sub("images/", "cid:", file_contents)
         with open(mail_path+language+"_save.html", encoding='utf-8', mode="w") as save:
             save.write(file_contents)
         return Template(file_contents)
@@ -88,10 +95,11 @@ def add_images_as_attachments(email : EmailMessage, mail_path: str):
         img_dir) if os.path.isfile(os.path.join(img_dir, f))]
     for img_name in onlyfiles:
         absolute_img_path = os.getcwd() + "/" + (img_dir + img_name)
+        # print(img_name)
         # know the Content-Type of the image
         maintype, subtype = mimetypes.guess_type(absolute_img_path)[0].split('/')
-
         img = open(absolute_img_path, "rb")
+
         # attach it
         email.add_related(img.read(), 
                         maintype=maintype, 
@@ -120,12 +128,12 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     en_mail_template = get_mail_template(mail_path, "en")
     print("Loading emails templates OK")
 
-    fr_mail_subject = "L'aventure du Cercle des Parfumeurs Créateurs se poursuit !"
-    en_mail_subject = "The Adventure of Le Cercle des Parfumeurs Créateurs goes on !"
+    fr_mail_subject = "Un ensemble d'échantillons offert !"
+    en_mail_subject = "A set of samples offered !"
 
-    last_perfume_bought: pd.DataFrame = pd.read_excel(
-        load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
-    last_perfume_bought = last_perfume_bought.set_index("Email", drop=True)
+    # last_perfume_bought: pd.DataFrame = pd.read_excel(
+    #     load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
+    # last_perfume_bought = last_perfume_bought.set_index("Email", drop=True)
 
     # Create a log file
     for _, row in df.iterrows():
@@ -198,7 +206,6 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     # Create mail object
     email = EmailMessage()
 
-    # Add images to the mail
 
     # Attribute the correct sender account
     sender = "serviceclient@lecercledesparfumeurscreateurs.com"
@@ -213,6 +220,7 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
 
     email.set_content(mail_html_formatted, subtype="html")
 
+    # Add images to the mail
     add_images_as_attachments(email=email, mail_path=mail_path)
 
 
@@ -237,7 +245,7 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
 
     if test_email != None:
         input("Press [Enter] to continue")
-
+        
 
 if __name__ == "__main__":
     main()
