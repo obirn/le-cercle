@@ -23,7 +23,7 @@ log_dir_path = "./logs/"
 
 # Edit this section
 excel_name = "all_sales_over_time.xlsx"
-mail_name = "relance-octobre/"
+mail_name = "relance-octobre-url/"
 
 def main():
     mailing_df = get_mailing_dataframe()
@@ -83,7 +83,7 @@ def get_mail_template(mail_path: str, language: str):
 
         # Replace src by cid in html code
         file_contents = file.read()
-        file_contents = re.sub("images/", "cid:", file_contents)
+        # file_contents = re.sub("images/", "cid:", file_contents)
         with open(mail_path+language+"_save.html", encoding='utf-8', mode="w") as save:
             save.write(file_contents)
         return Template(file_contents)
@@ -221,7 +221,7 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     email.set_content(mail_html_formatted, subtype="html")
 
     # Add images to the mail
-    add_images_as_attachments(email=email, mail_path=mail_path)
+    # add_images_as_attachments(email=email, mail_path=mail_path)
 
 
     # Send to test e-mail adress if in test mode.

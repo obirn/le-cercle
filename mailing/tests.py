@@ -15,8 +15,9 @@ class TestStringMethods(unittest.TestCase):
             load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx")["Email"]
         self.assertFalse(unsubscribed_emails.isin(mailing_df["Email"]).any())
 
-    def test_unsubscribed(self):
+    def test_unique(self):
         mailing_df : pd.DataFrame = get_mailing_dataframe()
+
         # Get unsubscribed clients
         unsubscribed_emails : pd.DataFrame = pd.read_excel(
             load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx")["Email"]
