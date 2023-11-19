@@ -60,7 +60,7 @@ def get_all_sales():
     merged_df['Nom'] = merged_df['Nom_y'].fillna(merged_df['Nom_x'])
     merged_df['Prénom'] = merged_df['Prénom_y'].fillna(merged_df['Prénom_x'])
     
-    clients_by_email : pd.DataFrame = merged_df.groupby(['Email'])['Nom', 'Prénom', 'Civilité', "Pays"].agg({'Nom':'first', 'Prénom':'first', 'Civilité': 'first', "Pays": "first"}).reset_index()
+    clients_by_email : pd.DataFrame = merged_df.groupby(['Email'])[['Nom', 'Prénom', 'Civilité', "Pays"]].agg({'Nom':'first', 'Prénom':'first', 'Civilité': 'first', "Pays": "first"}).reset_index()
 
     clients_by_email.to_excel(save_path + excel_path + clients_path + "clients_by_email.xlsx")
 
