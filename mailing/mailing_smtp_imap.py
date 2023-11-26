@@ -23,7 +23,8 @@ log_dir_path = "./logs/"
 
 # Edit this section
 excel_name = "all_sales_over_time.xlsx"
-mail_name = "relance-octobre-url/"
+mail_name = "noël-2023/"
+
 
 def main():
     mailing_df = get_mailing_dataframe()
@@ -38,12 +39,13 @@ def main():
     test_email = None
     if c == "T":
         test_email = input(
-            "Enter the email adress the mailing will be sent to (robin.varliette@gmail.com if empty): \n")
+            "Enter the email adress the mailing will be sent to (robin.varliette@gmail.com if empty): \n"
+        )
         test_email = "robin.varliette@gmail.com" if test_email == "" else test_email
         print(f"[TEST] Sending mailing to {test_email}")
         send_mailing(mailing_df, mail_dir_path + mail_name, test_email)
     elif c == "Y":
-        confirmation = input("Please confirm by writing \"confirm\": ")
+        confirmation = input('Please confirm by writing "confirm": ')
         if confirmation == "confirm":
             print(f"[PROD] Sending mailing to {len(mailing_df)} people.")
             send_mailing(mailing_df, mail_dir_path + mail_name, test_email)
@@ -51,76 +53,81 @@ def main():
         print(f"Unknown option: {c}")
 
 
-def get_mailing_dataframe()->pd.DataFrame:
-        # Get sales dataframe from excel
-    mailing_df = pd.read_excel(
-        load_path + excel_dir_path + sales_dir_path + excel_name)
+def get_mailing_dataframe() -> pd.DataFrame:
+    # Get sales dataframe from excel
+    mailing_df = pd.read_excel(load_path + excel_dir_path + sales_dir_path + excel_name)
+
+    # Remove already sent clients
+    with open("output.txt", "r") as file:
+        unique_emails = set(file.read().splitlines())
+    mailing_df = mailing_df[~mailing_df["Email"].isin(unique_emails)]
 
     # Get unsubscribed clients
     unsubscribed_emails = pd.read_excel(
-        load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx")["Email"]
+        load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx"
+    )["Email"]
 
     # Keep only subscribed clients
     mailing_df = mailing_df[~mailing_df["Email"].isin(unsubscribed_emails)]
 
     # Keep only unique emails
     mailing_df = mailing_df.drop_duplicates(subset=["Email"])
-    
+
     # Keep only english clients
-    # mailing_df = mailing_df[~mailing_df["Pays"].isin(["France", "Belgique", "FR", "BE"])]
+    # mailing_df = mailing_df[
+    #     ~mailing_df["Pays"].isin(["France", "Belgique", "FR", "BE"])
+    # ]
 
     # Define a regular expression pattern for email addresses
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
 
     # Remove unvalid email adresses
-    mailing_df = mailing_df[mailing_df['Email'].str.contains(email_pattern, regex=True)]
+    mailing_df = mailing_df[mailing_df["Email"].str.contains(email_pattern, regex=True)]
 
     return mailing_df
 
 
 def get_mail_template(mail_path: str, language: str):
-    with open(mail_path+language+".html", encoding='utf-8', mode="r") as file:
-
+    with open(mail_path + language + ".html", encoding="utf-8", mode="r") as file:
         # Replace src by cid in html code
         file_contents = file.read()
         # file_contents = re.sub("images/", "cid:", file_contents)
-        with open(mail_path+language+"_save.html", encoding='utf-8', mode="w") as save:
+        with open(
+            mail_path + language + "_save.html", encoding="utf-8", mode="w"
+        ) as save:
             save.write(file_contents)
         return Template(file_contents)
 
 
-def add_images_as_attachments(email : EmailMessage, mail_path: str):
+def add_images_as_attachments(email: EmailMessage, mail_path: str):
     img_dir = mail_path + "images/"
-    onlyfiles = [f for f in os.listdir(
-        img_dir) if os.path.isfile(os.path.join(img_dir, f))]
+    onlyfiles = [
+        f for f in os.listdir(img_dir) if os.path.isfile(os.path.join(img_dir, f))
+    ]
     for img_name in onlyfiles:
         absolute_img_path = os.getcwd() + "/" + (img_dir + img_name)
         # print(img_name)
         # know the Content-Type of the image
-        maintype, subtype = mimetypes.guess_type(absolute_img_path)[0].split('/')
+        maintype, subtype = mimetypes.guess_type(absolute_img_path)[0].split("/")
         img = open(absolute_img_path, "rb")
 
         # attach it
-        email.add_related(img.read(), 
-                        maintype=maintype, 
-                        subtype=subtype, 
-                        cid=img_name)
+        email.add_related(img.read(), maintype=maintype, subtype=subtype, cid=img_name)
 
         img.close()
 
 
 def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
-
     # Load SMTP client
     print("Loading SMTP Client...")
-    smtp_client = smtplib.SMTP_SSL(host='mail.gandi.net',port=465)
+    smtp_client = smtplib.SMTP_SSL(host="mail.gandi.net", port=465)
     smtp_client.ehlo()
     smtp_client.login(smtp_client_id, smtp_client_pass)
     print("Loading SMTP Server OK")
 
     # Load IMAP client
     print("Loading IMAP client...")
-    imap_client = imaplib.IMAP4_SSL(host="mail.gandi.net",port=993)
+    imap_client = imaplib.IMAP4_SSL(host="mail.gandi.net", port=993)
     imap_client.login(smtp_client_id, smtp_client_pass)
     print("IMAP client OK")
 
@@ -128,8 +135,8 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
     en_mail_template = get_mail_template(mail_path, "en")
     print("Loading emails templates OK")
 
-    fr_mail_subject = "Un ensemble d'échantillons offert !"
-    en_mail_subject = "A set of samples offered !"
+    fr_mail_subject = "Ho Ho Ho... Noël avec Le Cercle !"
+    en_mail_subject = "Ho Ho Ho... Christmas with Le Cercle !"
 
     # last_perfume_bought: pd.DataFrame = pd.read_excel(
     #     load_path + excel_dir_path + client_dir_path + "client_last_perfumes.xlsx")
@@ -137,8 +144,17 @@ def send_mailing(df: pd.DataFrame, mail_path: str, test_email: str):
 
     # Create a log file
     for _, row in df.iterrows():
-        send_mail(row, fr_mail_template, en_mail_template, fr_mail_subject,
-                    en_mail_subject, smtp_client, imap_client, mail_path, test_email)
+        send_mail(
+            row,
+            fr_mail_template,
+            en_mail_template,
+            fr_mail_subject,
+            en_mail_subject,
+            smtp_client,
+            imap_client,
+            mail_path,
+            test_email,
+        )
 
     smtp_client.close()
     imap_client.logout()
@@ -167,14 +183,21 @@ def get_most_bought_perfume(email: str, clients_last_perfume: pd.DataFrame):
         raise Exception(f"unrecognized perfume: {most_bought_perfume[:3]}")
 
 
-def send_mail(row: pd.Series, fr_mail_template: Template,
-              en_mail_template: Template, fr_mail_subject: str,
-              en_mail_subject: str, smtp_client, imap_client, mail_path,
-              test_email):
-
+def send_mail(
+    row: pd.Series,
+    fr_mail_template: Template,
+    en_mail_template: Template,
+    fr_mail_subject: str,
+    en_mail_subject: str,
+    smtp_client: smtplib.SMTP_SSL,
+    imap_client: imaplib.IMAP4_SSL,
+    mail_path: str,
+    test_email: str,
+):
     # Load infos (Country, Sex, Name And Family name) of every clients by their emails
     clients_by_email = pd.read_excel(
-        load_path + excel_dir_path + client_dir_path + "clients_by_email.xlsx")
+        load_path + excel_dir_path + client_dir_path + "clients_by_email.xlsx"
+    )
     clients_by_email = clients_by_email.set_index("Email", drop=True)
 
     receiver_email = str(row["Email"])
@@ -183,9 +206,16 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
 
     receiver_name = str(client_info["Prénom"]).strip()
     receiver_name = receiver_name.capitalize()
-    receiver_name = receiver_name if receiver_name != "Nan" else "Client"
-   
     isFrench = client_info["Pays"] in ["France", "Belgique", "FR", "BE"]
+
+    receiver_name = (
+        receiver_name
+        if receiver_name != "Nan"
+        else "Client"
+        if isFrench
+        else "Customer"
+    )
+
     if isFrench:
         mail_template = fr_mail_template
         mail_subject = fr_mail_subject
@@ -206,7 +236,6 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     # Create mail object
     email = EmailMessage()
 
-
     # Attribute the correct sender account
     sender = "serviceclient@lecercledesparfumeurscreateurs.com"
     email["From"] = sender
@@ -214,21 +243,32 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
     # Set email's Subject
     email["Subject"] = mail_subject
 
-    
     # Format the mail
-    mail_html_formatted = mail_template.safe_substitute(greeting = greeting);
+    mail_html_formatted = mail_template.safe_substitute(greeting=greeting)
 
     email.set_content(mail_html_formatted, subtype="html")
 
     # Add images to the mail
     # add_images_as_attachments(email=email, mail_path=mail_path)
 
-
     # Send to test e-mail adress if in test mode.
     sendTo = test_email if test_email != None else receiver_email
     email["To"] = sendTo
 
-    # Send email
+    send_smtp_email(imap_client, smtp_client, sender, sendTo, receiver_email, email)
+
+    if test_email != None:
+        input("Press [Enter] to continue")
+
+
+def send_smtp_email(
+    imap_client: imaplib.IMAP4_SSL,
+    smtp_client: smtplib.SMTP_SSL,
+    sender: str,
+    sendTo: str,
+    receiver_email: str,
+    email: str,
+):
     try:
         dict_error = "None"
         print("Sending mail to {} for {}".format(sendTo, receiver_email))
@@ -239,13 +279,14 @@ def send_mail(row: pd.Series, fr_mail_template: Template,
         print("With dictionary: {}".format(str(dict_error)))
     else:
         # print("Mail sent succesfully")
-        imap_client.append('Sent', '', imaplib.Time2Internaldate(time()), email.as_string().encode('utf-8'))
+        imap_client.append(
+            "Sent",
+            "",
+            imaplib.Time2Internaldate(time()),
+            email.as_string().encode("utf-8"),
+        )
         # print("Mail synced with Sent folder on IMAP server successfully")
 
-
-    if test_email != None:
-        input("Press [Enter] to continue")
-        
 
 if __name__ == "__main__":
     main()

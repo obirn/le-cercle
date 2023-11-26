@@ -5,3 +5,4 @@ lib64/
 *.cfg
 *credentials.py
 *__pycache__
+.vscode/
