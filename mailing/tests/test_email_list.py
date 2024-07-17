@@ -15,25 +15,22 @@ import pandas as pd
 # TODO: Check if the email is the correct one (i.e. not sending the black friday email for christmas)
 # TODO: Ask the user if he thought to create the discount codes related to the email
 # TODO: Check if the links are working
-
-# The script has to be executed in the "mailing" directory (can be done use the Makefile) !
-load_path = "../../Data/Load/"
-save_path = "../../Data/Save/"
-excel_dir_path = "Excels/"
-client_dir_path = "Clients/"
-sales_dir_path = "Ventes/"
-mail_dir_path = "./mails/"
-log_dir_path = "./logs/"
+# TODO: Add warning if after removing unsusbriced clients, the mailing list is empty or same length
 
 # Edit this section
-client_excel_path = "clients_by_email.xlsx"
+client_excel_filename = "clients_by_email.xlsx"
+client_unsubscribed_filename = "unsubscribed_clients.xlsx"
 mail_name = "noel-2023/"
 fr_mail_subject = "Ho Ho Ho... Noël avec Le Cercle !"
 en_mail_subject = "Ho Ho Ho... Christmas with Le Cercle !"
 sender = "serviceclient@lecercledesparfumeurscreateurs.com"
 
-mailing_df = get_mailing_dataframe()
-email_list = get_email_object_list(mail_dir_path + mail_name, mailing_df)
+mail_dir_path = "./mails/"
+
+mailing_df = get_mailing_dataframe(client_excel_filename, client_unsubscribed_filename)
+email_list = get_email_object_list(
+    mail_dir_path + mail_name, mailing_df, fr_mail_subject, en_mail_subject, sender
+)
 
 
 def test_none_values():
@@ -44,13 +41,8 @@ def test_equal_length():
     assert len(mailing_df) == len(email_list)
 
 
-def test_no_crash():
-    try:
-        df = get_mailing_dataframe()
-        list = get_email_object_list(mail_dir_path + mail_name, mailing_df)
-    except:
-        assert False
-    assert True
+def test_ength_not_zero():
+    assert len(email_list) > 0
 
 
 def test_no_empty():

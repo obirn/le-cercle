@@ -1,6 +1,6 @@
 import pandas as pd
+
 from string import Template
-from credentials import *
 
 from email.message import EmailMessage
 import mimetypes
@@ -11,6 +11,16 @@ from time import time
 import os
 import sys
 import re
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Environment variables
+smtp_client_id = os.getenv("SMTP_CLIENT_ID")
+smtp_client_pass = os.getenv("SMTP_CLIENT_PASS")
+imap_client_id = os.getenv("IMAP_CLIENT_ID")
+imap_client_pass = os.getenv("IMAP_CLIENT_PASS")
 
 # The script has to be executed in the "mailing" directory (can be done use the Makefile) !
 load_path = "../../Data/Load/"
@@ -53,7 +63,14 @@ def main(
     en_mail_subject,
     sender,
 ):
-    mailing_df = get_mailing_dataframe()
+    client_excel_path = (
+        load_path + excel_dir_path + client_dir_path + client_excel_filename
+    )
+    client_unsubscribed_path = (
+        load_path + excel_dir_path + client_dir_path + client_unsubscribed_filename
+    )
+    mail_html_directory = mail_dir_path + mail_name
+    mailing_df = get_mailing_dataframe(client_excel_path, client_unsubscribed_path)
     clients_by_email = pd.read_excel(client_excel_path)
     clients_by_email = clients_by_email.set_index("Email", drop=True)
 
@@ -68,12 +85,17 @@ def main(
     print("")
     print(f"Press [Y] to send the mailing to every clients.")
     c = sys.stdin.read(1)
-    test_email = None
     if c == "Y":
         confirmation = input('Please confirm by writing "confirm": ')
         if confirmation == "confirm":
             print(f"Sending mailing to {len(mailing_df)} people.")
-            send_mailing(mailing_df, mail_dir_path + mail_name)
+            send_mailing(
+                mailing_df,
+                mail_html_directory,
+                fr_mail_subject,
+                en_mail_subject,
+                sender,
+            )
         else:
             print('You didn\'t wrote "confirm" correctly.')
     else:
@@ -81,17 +103,20 @@ def main(
 
 
 def get_mailing_dataframe(
-    client_subscribed_path, client_unsubscribed_path
+    client_excel_filename, client_unsubscribed_filename
 ) -> pd.DataFrame:
-    # Get sales dataframe from excel
-    mailing_df = pd.read_excel(
-        load_path + excel_dir_path + client_dir_path + client_excel_path
+    client_subscribed_path = (
+        load_path + excel_dir_path + client_dir_path + client_excel_filename
+    )
+    client_unsubscribed_path = (
+        load_path + excel_dir_path + client_dir_path + client_excel_filename
     )
 
+    # Get sales dataframe from excel
+    mailing_df = pd.read_excel(client_subscribed_path)
+
     # Get unsubscribed clients
-    unsubscribed_emails = pd.read_excel(
-        load_path + excel_dir_path + client_dir_path + "unsubscribed_clients.xlsx"
-    )["Email"]
+    unsubscribed_emails = pd.read_excel(client_unsubscribed_path)["Email"]
 
     # Keep only subscribed clients
     mailing_df = mailing_df[~mailing_df["Email"].isin(unsubscribed_emails)]
@@ -108,15 +133,17 @@ def get_mailing_dataframe(
     return mailing_df
 
 
-def get_mail_template(mail_path: str, language: str):
+def get_mail_template(mail_html_directory: str, language: str):
     print(os.getcwd())
-    print(mail_path)
-    with open(mail_path + language + ".html", encoding="utf-8", mode="r") as file:
+    print(mail_html_directory)
+    with open(
+        mail_html_directory + language + ".html", encoding="utf-8", mode="r"
+    ) as file:
         # Replace src by cid in html code
         file_contents = file.read()
         # file_contents = re.sub("images/", "cid:", file_contents)
         with open(
-            mail_path + language + "_save.html", encoding="utf-8", mode="w"
+            mail_html_directory + language + "_save.html", encoding="utf-8", mode="w"
         ) as save:
             save.write(file_contents)
         return Template(file_contents)
@@ -141,21 +168,36 @@ def add_images_as_attachments(email: EmailMessage, mail_path: str):
 
 def send_mailing(
     mailing_df: pd.DataFrame,
-    mail_path: str,
+    mail_html_directory: str,
+    fr_mail_subject: str,
+    en_mail_subject: str,
+    sender: str,
 ):
     smtp_client = init_smtp_client()
     imap_client = init_imap_client()
 
-    email_list = get_email_object_list(mail_path, mailing_df)
+    email_list = get_email_object_list(
+        mail_html_directory, mailing_df, fr_mail_subject, en_mail_subject, sender
+    )
 
     # for email in email_list:
-    #     send_smtp_email(imap_client, smtp_client, email)
+    #     send_smtp_email(
+    #         imap_client,
+    #         smtp_client,
+    #         email,
+    #     )
 
     smtp_client.close()
     imap_client.logout()
 
 
-def get_email_object_list(mail_path: str, mailing_df: pd.DataFrame) -> list:
+def get_email_object_list(
+    mail_path: str,
+    mailing_df: pd.DataFrame,
+    fr_mail_subject: str,
+    en_mail_subject: str,
+    sender: str,
+) -> list:
     fr_mail_template = get_mail_template(mail_path, "fr")
     en_mail_template = get_mail_template(mail_path, "en")
 
@@ -172,7 +214,7 @@ def get_email_object_list(mail_path: str, mailing_df: pd.DataFrame) -> list:
         greeting = get_greeting(isFrench, client_info["Civilité"], receiver_name)
 
         email_object = create_email_object(
-            subject, mail_template, greeting, receiver_email
+            subject, mail_template, greeting, receiver_email, sender
         )
 
         email_object_list.append(email_object)
@@ -181,7 +223,7 @@ def get_email_object_list(mail_path: str, mailing_df: pd.DataFrame) -> list:
 
 
 def create_email_object(
-    mail_subject: str, mail_template: Template, greeting: str, sendTo: str
+    mail_subject: str, mail_template: Template, greeting: str, sendTo: str, sender: str
 ) -> EmailMessage:
     email = EmailMessage()
 
@@ -241,7 +283,3 @@ def send_smtp_email(
             email.as_string().encode("utf-8"),
         )
         # print("Mail synced with Sent folder on IMAP server successfully")
-
-
-if __name__ == "__main__":
-    main()

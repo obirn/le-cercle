@@ -1,9 +1,5 @@
-bin/
-include/
-lib/
-lib64
-lib64/
 __pycache__/
 .vscode/
 *.cfg
-*credentials.py
+.env
+.venv/

@@ -1,4 +1,4 @@
-from src.mailing_smtp_imap import main
+from mailing_smtp_imap import main
 
 # The script has to be executed in the "mailing" directory (can be done use the Makefile) !
 
@@ -18,3 +18,6 @@ main(
     en_mail_subject,
     sender,
 )
+
+if __name__ == "__main__":
+    main()
