@@ -21,13 +21,6 @@ sales_dir_path = "Ventes/"
 mail_dir_path = "./mails/"
 log_dir_path = "./logs/"
 
-# Edit this section
-client_excel_path = "clients_by_email.xlsx"
-mail_name = "noel-2023/"
-fr_mail_subject = "Ho Ho Ho... Noël avec Le Cercle !"
-en_mail_subject = "Ho Ho Ho... Christmas with Le Cercle !"
-sender = "serviceclient@lecercledesparfumeurscreateurs.com"
-
 
 def init_imap_client():
     imap_client = imaplib.IMAP4_SSL(host="mail.gandi.net", port=993)
@@ -52,12 +45,16 @@ def send_french_email(test_email: str):
     receiver_email = first_row["Email"]
 
 
-def main():
+def main(
+    client_excel_filename,
+    client_unsubscribed_filename,
+    mail_name,
+    fr_mail_subject,
+    en_mail_subject,
+    sender,
+):
     mailing_df = get_mailing_dataframe()
-    print(os.getcwd())
-    clients_by_email = pd.read_excel(
-        load_path + excel_dir_path + client_dir_path + "clients_by_email.xlsx"
-    )
+    clients_by_email = pd.read_excel(client_excel_path)
     clients_by_email = clients_by_email.set_index("Email", drop=True)
 
     # Confirm the user that he wants to send the mailing
@@ -83,7 +80,9 @@ def main():
         print(f"Unknown option: {c}")
 
 
-def get_mailing_dataframe() -> pd.DataFrame:
+def get_mailing_dataframe(
+    client_subscribed_path, client_unsubscribed_path
+) -> pd.DataFrame:
     # Get sales dataframe from excel
     mailing_df = pd.read_excel(
         load_path + excel_dir_path + client_dir_path + client_excel_path
