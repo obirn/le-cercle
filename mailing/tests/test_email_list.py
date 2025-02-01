@@ -7,8 +7,9 @@ from src.mailing_smtp_imap import *
 import pandas as pd
 
 # TODO: Improve tests for nan values
-# TODO: Add tests for language
+# TODO: Add tests for language (test if fr is fr mail and en is en mail)
 # TODO: Add tests for subject
+# TODO: Add tests for greeting (test if it contains the name of the client)
 # TODO: Add tests for imap and outlook servers
 # TODO: Add tests for email - preview (Logo Light....)
 # TODO: Add tests to check if the mailing contains french and english mails
@@ -16,6 +17,8 @@ import pandas as pd
 # TODO: Ask the user if he thought to create the discount codes related to the email
 # TODO: Check if the links are working
 # TODO: Add warning if after removing unsusbriced clients, the mailing list is empty or same length
+# TODO: Check if mail contains weird characters (like from error due to encoding)
+# TODO: Add time stamp of last edited mail in mailing message
 
 # Edit this section
 client_excel_filename = "clients_by_email.xlsx"

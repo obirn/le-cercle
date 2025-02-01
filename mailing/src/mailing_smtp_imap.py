@@ -141,11 +141,16 @@ def get_mailing_dataframe(
     # Get unsubscribed clients
     unsubscribed_emails = pd.read_excel(client_unsubscribed_path)["Email"]
 
+    # Trim every email
+    mailing_df["Email"] = mailing_df["Email"].str.strip()
+    unsubscribed_emails = unsubscribed_emails.str.strip()
+
     # Keep only subscribed clients
     mailing_df = mailing_df[~mailing_df["Email"].isin(unsubscribed_emails)]
 
-    # Trim every email
-    mailing_df["Email"] = mailing_df["Email"].str.strip()
+    # Remove manuel.varliette@free.fr from mailing list
+    mailing_df = mailing_df[~mailing_df["Email"].str.contains("manuel.varliette@free.fr")]
+    mailing_df = mailing_df[~mailing_df["Email"].str.contains("manuel.varliette@beautyentreprise.com")]
 
     # Keep only unique emails
     mailing_df = mailing_df.drop_duplicates(subset=["Email"])
@@ -260,6 +265,8 @@ def get_email_object_list(
         email_object = create_email_object(
             subject, mail_template, greeting, receiver_email, sender
         )
+
+        # add_images_as_attachments(email_object, mail_path)
 
         email_object_list.append(email_object)
 
