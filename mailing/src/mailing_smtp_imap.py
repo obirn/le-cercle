@@ -327,11 +327,14 @@ def send_smtp_email(
         print("Sending mail to {}".format(email["To"]))
         dict_error = smtp_client.sendmail(email["From"], email["To"], email.as_string())
         sent_log_file.write(email["To"] + "\n")
+        sent_log_file.flush()
     except Exception as e:
         error_log_file.write("Couldn't send mail to {}".format(email["To"]))
         error_log_file.write("Got exception {}".format(str(e)))
         error_log_file.write("With dictionary: {}".format(str(dict_error)))
         not_sent_log_file.write(email["To"] + "\n")
+        error_log_file.flush()
+        not_sent_log_file.flush()
     else:
         # print("Mail sent succesfully")
         imap_client.append(
