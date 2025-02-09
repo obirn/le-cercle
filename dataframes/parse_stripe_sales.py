@@ -1,11 +1,13 @@
 import pandas as pd
 
-load_path = "../../Data/Load/"
-save_path = "../../Data/Save/"
-excel_path = "Excels/"
-csv_path = "CSVs/"
-sales_path = "Ventes/"
-clients_path = "Clients/"
+LOAD_PATH = "../../Data/Load/"
+SAVE_PATH = "../../Data/Save/"
+EXCEL_PATH = "Excels/"
+CSV_PATH = "CSVs/"
+SALES_PATH = "Ventes/"
+CLIENTS_PATH = "Clients/"
+
+LAST_TEST_ORDER_DATETIME = "13/10/2021  18:45:00"
 
 products_as_column = [
     "OSM 75S",
@@ -66,33 +68,27 @@ conditioning_to_short = {
 }
 
 
-def parse_stripe_sales():
-    print("Parsing stripe sales... \n")
-    df = pd.read_csv(load_path + csv_path + "unified_payments.csv")
+def parse_stripe_sales(stripe_csv_path: str):
+    print("Parsing stripe sales: " + stripe_csv_path + "\n")
+
+    # Load csv from path
+    df = pd.read_csv(LOAD_PATH + CSV_PATH + stripe_csv_path)
 
     # Remove 'Test' orders of the dataframe
-    print("Removing test orders...")
-    print("Number of orders before removing:", len(df))
     df["Created date (UTC)"] = pd.to_datetime(df["Created date (UTC)"])
-    df = df[~(df["Created date (UTC)"] <= "13/10/2021  18:45:00")]
-    print("Number of orders after removing:", len(df))
-    print("\n")
+    df = df[~(df["Created date (UTC)"] <= LAST_TEST_ORDER_DATETIME)]
 
-    print("Removing un-paid orders...")
-    print("Number of orders before removing:", len(df))
-    # Keep orders that have been paid successfully
+    # Only keep orders that have been paid successfully
     df = df.loc[(df["Status"] == "Paid")]
-    print("Number of orders after removing:", len(df))
-    print("\n")
 
-    print("Parsing orders...")
+    # Parsing orders
     df = parse_stripe_orders(df)
 
     # Reset index
     df = df.reset_index()
 
     # Save dataframe as excel
-    df.to_excel(save_path + csv_path + "stripe_sales_product_as_columns.xlsx")
+    df.to_excel(SAVE_PATH + CSV_PATH + "stripe_sales_product_as_columns.xlsx")
 
     return df
 

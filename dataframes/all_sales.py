@@ -54,7 +54,8 @@ products_as_column = [
 
 def get_all_sales():
     papa_df = parse_papa_sales()
-    stripe_df = parse_stripe_sales()
+    wix_v1_stripe_df = parse_stripe_sales("wix_v1.csv")
+    wix_v2_stripe_df = parse_stripe_sales("wix_v2.csv")
 
     stripe_accounting_columns = [
         "Created date (UTC)",
@@ -66,8 +67,15 @@ def get_all_sales():
         "Source",
         "Country",
     ] + products_as_column
+    
+    # Stripe csv from first wix website
+    wix_v1_stripe_df = wix_v1_stripe_df[stripe_accounting_columns]
 
-    stripe_df = stripe_df[stripe_accounting_columns]
+    # Stripe csv from first wix website
+    wix_v2_stripe_df = wix_v2_stripe_df[stripe_accounting_columns]
+
+    wix_v1_stripe_df = pd.concat([wix_v1_stripe_df, wix_v2_stripe_df], ignore_index=False)
+    print(len(wix_v1_stripe_df))
 
     # Normalize columns names
     stripe_to_normalized = {
@@ -80,11 +88,9 @@ def get_all_sales():
         "Country": "Pays",
     }
 
-    stripe_df.rename(columns=stripe_to_normalized, inplace=True)
+    wix_v1_stripe_df.rename(columns=stripe_to_normalized, inplace=True)
 
-    print(stripe_df.loc[stripe_df["Email"] == "client@example.com"]["Pays"])
-
-    all_sales = pd.concat([papa_df, stripe_df], join="outer", axis=0)
+    all_sales = pd.concat([papa_df, wix_v1_stripe_df], join="outer", axis=0)
 
     # Load wix contacts csv
     wix_contacts = pd.read_csv(load_path + csv_path + "contacts-wix-06-04-23.csv")
