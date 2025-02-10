@@ -5,14 +5,14 @@ from mailing_smtp_imap import main
 # Edit this section
 client_excel_filename = "clients_by_email.xlsx"
 # client_excel_filename = "test_clients_by_email.xlsx"
-# client_excel_filename = "robin_en_test_clients_by_email.xlsx"
+client_excel_filename = "robin_en_test_clients_by_email.xlsx"
 client_unsubscribed_filename = "unsubscribed_clients.xlsx"
 
-mail_name = "2025-02-10_saint-valentin-relance"
+mail_name = "2025-02-10_saint-valentin-relance/"
 en_mail_subject = "Only 4 days left for your Valentine's Day gift !"
 fr_mail_subject = "Plus que 4 jours pour votre cadeau de la saint valentin !"
 sender = "serviceclient@lecercledesparfumeurscreateurs.com"
-test_mailtrap = True
+test_mailtrap = False
 
 if __name__ == "__main__":
     main(

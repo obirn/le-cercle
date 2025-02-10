@@ -148,10 +148,6 @@ def get_mailing_dataframe(
     # Keep only subscribed clients
     mailing_df = mailing_df[~mailing_df["Email"].isin(unsubscribed_emails)]
 
-    # Remove manuel.varliette@free.fr from mailing list
-    mailing_df = mailing_df[~mailing_df["Email"].str.contains("manuel.varliette@free.fr")]
-    mailing_df = mailing_df[~mailing_df["Email"].str.contains("manuel.varliette@beautyentreprise.com")]
-
     # Keep only unique emails
     mailing_df = mailing_df.drop_duplicates(subset=["Email"])
 
