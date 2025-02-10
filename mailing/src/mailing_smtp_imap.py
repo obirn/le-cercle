@@ -326,6 +326,12 @@ def send_smtp_email(
         dict_error = "None"
         print("Sending mail to {}".format(email["To"]))
         dict_error = smtp_client.sendmail(email["From"], email["To"], email.as_string())
+        imap_client.append(
+            "Sent",
+            "",
+            imaplib.Time2Internaldate(time()),
+            email.as_string().encode("utf-8"),
+        )
         sent_log_file.write(email["To"] + "\n")
         sent_log_file.flush()
     except Exception as e:
@@ -335,12 +341,3 @@ def send_smtp_email(
         not_sent_log_file.write(email["To"] + "\n")
         error_log_file.flush()
         not_sent_log_file.flush()
-    else:
-        # print("Mail sent succesfully")
-        imap_client.append(
-            "Sent",
-            "",
-            imaplib.Time2Internaldate(time()),
-            email.as_string().encode("utf-8"),
-        )
-        # print("Mail synced with Sent folder on IMAP server successfully")

@@ -94,25 +94,29 @@ def parse_stripe_sales(stripe_csv_path: str):
 
 
 def parse_stripe_orders(df: pd.DataFrame):
+    # Create a new dataframe
     ordered_products = pd.DataFrame(
         0, columns=products_as_column + ["Country"], index=df.index
     )
+    
+    # For every order:
     for n, row in df.iterrows():
 
+        # Get country information
         pays = row["Shipping Address (metadata)"]
         ordered_products.at[n, "Country"] = pays[-2::]
 
+        # Get products from order
         order = row["Description"]
-        print(f"Order: {order}")
         products = order.split(";")
+
+        # For every product
         for product in products:
-            # print(product)
-            column_name = ""
+            product_name = ""
             product = product.strip()
             product_words = product.split(" ")
 
             # Extract quantity
-
             quantity = 1
             start_index = product.find("[")
             if start_index != -1:
@@ -121,23 +125,23 @@ def parse_stripe_orders(df: pd.DataFrame):
                 product = product[:start_index]
 
             if product in ["ENSEMBLE D'ÉCHANTILLONS", "COFFRET DÉCOUVERTE"]:
-                column_name = product
+                product_name = product
             elif product_words[0] == "ÉCHANTILLON":
                 perfume = product[12:].strip()
-                column_name = perfumes_to_short[perfume] + " E"
+                product_name = perfumes_to_short[perfume] + " E"
             else:
                 [perfume, conditioning] = product.split("Conditionnement:")
                 perfume, conditioning = perfume.strip(), conditioning.strip()
                 shortName = perfumes_to_short[perfume]
                 shortConditioning = conditioning_to_short[conditioning]
-                column_name = shortName + " " + shortConditioning
+                product_name = shortName + " " + shortConditioning
             print(f"   Product: {product}")
-            print(f"   Adding {quantity} to {column_name}")
-            ordered_products.at[n, column_name] += quantity
+            print(f"   Adding {quantity} to {product_name}")
+            # Add quantity to column name 
+            ordered_products.at[n, product_name] += quantity
 
     df["Source"] = "Wix"
     return df.join(ordered_products)
-
 
 if __name__ == "__main__":
     parse_stripe_sales()

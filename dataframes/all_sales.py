@@ -71,11 +71,10 @@ def get_all_sales():
     # Stripe csv from first wix website
     wix_v1_stripe_df = wix_v1_stripe_df[stripe_accounting_columns]
 
-    # Stripe csv from first wix website
+    # Stripe csv from second wix website
     wix_v2_stripe_df = wix_v2_stripe_df[stripe_accounting_columns]
 
-    wix_v1_stripe_df = pd.concat([wix_v1_stripe_df, wix_v2_stripe_df], ignore_index=False)
-    print(len(wix_v1_stripe_df))
+    # wix_v1_stripe_df = pd.concat([wix_v1_stripe_df, wix_v2_stripe_df], ignore_index=False)
 
     # Normalize columns names
     stripe_to_normalized = {
@@ -114,6 +113,8 @@ def get_all_sales():
     clients_by_email.to_excel(
         save_path + excel_path + clients_path + "clients_by_email.xlsx"
     )
+
+    print(len(clients_by_email))
 
     # Save the dataframe as an excel
     all_sales.to_excel(save_path + excel_path + sales_path + "all_sales_over_time.xlsx")
