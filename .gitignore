@@ -4,3 +4,11 @@ __pycache__/
 .env
 .venv/
 logs/
+
+# Données clients / personnelles
+*.csv
+*.xlsx
+*.xls
+sent.txt
+output.txt
+Logs.txt
